@@ -1,0 +1,1 @@
+# UI 层（只读 state、发 intent，design §3.1）：HubScreen / BattleScreen / DualPortrait / Typewriter / CodexScreen / EndingScreen
