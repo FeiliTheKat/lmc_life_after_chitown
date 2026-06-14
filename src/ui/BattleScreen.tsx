@@ -215,6 +215,9 @@ export function BattleScreen({
   const rt = state.girls[b.girlId];
   const revealed = new Set<MoveCategory>([...b.revealedThisBattle, ...rt.revealedWeakness]);
   const pct = Math.min(100, Math.round((b.captureProgress / b.threshold) * 100));
+  const energy = state.resources.energy;
+  const energyPct = Math.min(100, Math.round((energy / 100) * 100));
+  const energyTone = energy <= 20 ? 'danger' : energy <= 40 ? 'warn' : 'ok';
 
   return (
     <main class="screen battle">
@@ -225,6 +228,11 @@ export function BattleScreen({
         <span class="progress-label">
           攻陷 {b.captureProgress}/{b.threshold}
         </span>
+      </div>
+
+      <div class={`progress energy-bar energy-${energyTone}`}>
+        <div class="progress-fill" style={{ width: `${energyPct}%` }} />
+        <span class="progress-label">精力 {energy}/100</span>
       </div>
 
       <div class="reveal-row">

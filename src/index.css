@@ -323,6 +323,15 @@ button.danger:hover:not(:disabled) {
   background: var(--accent);
   transition: width 0.2s;
 }
+.energy-bar .progress-fill {
+  background: var(--good);
+}
+.energy-bar.energy-warn .progress-fill {
+  background: var(--warn);
+}
+.energy-bar.energy-danger .progress-fill {
+  background: var(--bad);
+}
 .progress-label {
   position: absolute;
   inset: 0;
