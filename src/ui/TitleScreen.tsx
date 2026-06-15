@@ -14,7 +14,7 @@ export function TitleScreen({ onStart }: { onStart: () => void }) {
         <button
           class="primary start"
           onClick={() => {
-            playBgm('/music/intro-theme.mp4');
+            playBgm(`${import.meta.env.BASE_URL}music/intro-theme.mp4`);
             onStart();
           }}
         >

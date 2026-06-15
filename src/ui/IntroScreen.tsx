@@ -59,7 +59,7 @@ export function IntroScreen({ onDone }: IntroScreenProps) {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
-    new Audio('/music/21-questions.mp4');
+    new Audio(`${import.meta.env.BASE_URL}music/21-questions.mp4`);
   }, []);
   const beat = BEATS[idx];
   const isLast = idx === BEATS.length - 1;

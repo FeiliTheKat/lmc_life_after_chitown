@@ -145,7 +145,7 @@ function SakeeQuestions({
   const done = i >= lines.length;
 
   useEffect(() => {
-    playBgm('/music/21-questions.mp4');
+    playBgm(`${import.meta.env.BASE_URL}music/21-questions.mp4`);
   }, []);
 
   useEffect(() => {
