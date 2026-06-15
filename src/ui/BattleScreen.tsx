@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
+import { playBgm } from '@/engine/bgm';
 import { MOVES, MOVE_KEYS } from '@/content/moves.data';
-import { canUseMove } from '@/systems/battleEngine';
+import { canUseMove, talentUnlocked, chatBeatsRemaining } from '@/systems/battleEngine';
 import { girlDef } from '@/content/monkeyGirls.data';
 import { MONKEY_PORTRAITS } from '@/content/monkey.data';
 import { pic } from '@/content/assets';
@@ -29,17 +30,6 @@ function DialogueLineP({
       {text}
       {caret && <span class="caret">▋</span>}
     </p>
-  );
-}
-
-/** 静态对话（收服/失败结算全文展示，不逐字）。 */
-function DialogueLog({ lines, girlName }: { lines: DialogueLine[]; girlName: string }) {
-  return (
-    <div class="dialogue">
-      {lines.map((l, i) => (
-        <DialogueLineP key={i} line={l} girlName={girlName} text={l.text} />
-      ))}
-    </div>
   );
 }
 
@@ -106,6 +96,33 @@ function BattleDialogue({ lines, girlName }: { lines: DialogueLine[]; girlName: 
   );
 }
 
+const SAKEE_WIN_IMG = 'beat sakee.webp';
+
+/** Sakee 败后第一幕：whale-modal 样式，显示旁白 + 「永玄，Yield」按钮。 */
+function SakeeWinModal({ text, onConfirm }: { text: string; onConfirm: () => void }) {
+  const img = SAKEE_WIN_IMG ? pic(SAKEE_WIN_IMG) : undefined;
+  return (
+    <div class="modal-backdrop whale-backdrop">
+      <div class="whale-modal">
+        <span class="whale-kind-tag">结果</span>
+        <div class="whale-body">
+          {img && (
+            <figure class="whale-portrait">
+              <img src={img} alt="" />
+            </figure>
+          )}
+          <p class="whale-text">{text}</p>
+        </div>
+        <div class="btn-col whale-actions">
+          <button class="primary whale-confirm" onClick={onConfirm}>
+            永玄，Yield
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Mulasakee「21 问」大弹窗（mulasakee.md 定稿）：赢下后全屏覆盖，一次只放一句——
  * 淡入 → 停留约 3 秒 → 淡出，自动接下一句；点击可立即跳到下一句。
@@ -121,11 +138,15 @@ function SakeeQuestions({
   girlName: string;
   onConfirm: () => void;
 }) {
-  const HOLD = 3000; // 每句停留时长（作者指定 3 秒）
+  const HOLD = 5000; // 每句停留时长（作者指定 5 秒）
   const FADE = 600; // 淡入/淡出时长
   const [i, setI] = useState(0);
   const [shown, setShown] = useState(false);
   const done = i >= lines.length;
+
+  useEffect(() => {
+    playBgm('/music/21-questions.mp4');
+  }, []);
 
   useEffect(() => {
     if (done) return;
@@ -215,9 +236,9 @@ export function BattleScreen({
   const rt = state.girls[b.girlId];
   const revealed = new Set<MoveCategory>([...b.revealedThisBattle, ...rt.revealedWeakness]);
   const pct = Math.min(100, Math.round((b.captureProgress / b.threshold) * 100));
-  const energy = state.resources.energy;
-  const energyPct = Math.min(100, Math.round((energy / 100) * 100));
-  const energyTone = energy <= 20 ? 'danger' : energy <= 40 ? 'warn' : 'ok';
+  const energyMax = balance.resources.energyMax;
+  const energyPct = Math.min(100, Math.round((state.resources.energy / energyMax) * 100));
+  const [sakeeIntroSeen, setSakeeIntroSeen] = useState(false);
 
   return (
     <main class="screen battle">
@@ -230,9 +251,11 @@ export function BattleScreen({
         </span>
       </div>
 
-      <div class={`progress energy-bar energy-${energyTone}`}>
-        <div class="progress-fill" style={{ width: `${energyPct}%` }} />
-        <span class="progress-label">精力 {energy}/100</span>
+      <div class="progress energy-bar">
+        <div class="progress-fill energy-fill" style={{ width: `${energyPct}%` }} />
+        <span class="progress-label">
+          精力 {state.resources.energy}/{energyMax}
+        </span>
       </div>
 
       <div class="reveal-row">
@@ -256,17 +279,28 @@ export function BattleScreen({
         />
       )}
 
+      {/* 才艺前置门提示（2026-06-15）：没聊完话术，唱歌/跳舞按钮锁着 */}
+      {!b.result && !talentUnlocked(girl, b) && (
+        <p class="chat-gate-hint">
+          先用「话术」把话聊完，才能唱歌/跳舞/颜值反问（还差 {chatBeatsRemaining(girl, b)} 句）
+        </p>
+      )}
+
       <div class="btn-row wrap moves">
         {MOVE_KEYS.map((k) => {
           const m = MOVES[k];
+          const chatLocked = (m.category === '才艺' || m.category === '颜值') && !talentUnlocked(girl, b);
           return (
             <button
               key={k}
-              disabled={!!b.result || !canUseMove(m, state)}
+              class={chatLocked ? 'chat-locked' : undefined}
+              disabled={!!b.result || !canUseMove(m, state) || chatLocked}
               onClick={() => controller.battleTurn(k)}
             >
               {m.label}
-              <small>精力-{m.costEnergy}{m.costMoneyPerUse ? `·¥${m.costMoneyPerUse}` : ''}</small>
+              <small>
+                {chatLocked ? '需先聊完话术' : `精力-${m.costEnergy}${m.costMoneyPerUse ? `·¥${m.costMoneyPerUse}` : ''}`}
+              </small>
             </button>
           );
         })}
@@ -274,19 +308,31 @@ export function BattleScreen({
 
       {!b.result && (
         <button class="flee" onClick={() => controller.fleeBattle()}>
-          下播（认输）<small>当场判负 · 掉粉，但话术经验照拿</small>
+          认输
+          <small>
+            {state.resources.energy > 10
+              ? '判负掉粉 · 话术不涨'
+              : '判负掉粉 · 话术照拿'}
+          </small>
         </button>
       )}
 
       {b.result === 'win' &&
         state.pendingCaptureDialogue &&
         (girl.isHidden ? (
-          // 神秘嘉宾（Mulasakee）：赢后「21 问」全屏大弹窗逐句放（mulasakee.md 定稿）
-          <SakeeQuestions
-            lines={state.pendingCaptureDialogue.dialogue}
-            girlName={girl.name}
-            onConfirm={() => controller.confirmCapture()}
-          />
+          // 神秘嘉宾（Mulasakee）：先展示败后旁白 modal，确认后进「21 问」全屏大弹窗
+          !sakeeIntroSeen ? (
+            <SakeeWinModal
+              text={state.pendingCaptureDialogue.dialogue[0]?.text ?? ''}
+              onConfirm={() => setSakeeIntroSeen(true)}
+            />
+          ) : (
+            <SakeeQuestions
+              lines={state.pendingCaptureDialogue.dialogue.slice(1)}
+              girlName={girl.name}
+              onConfirm={() => controller.confirmCapture()}
+            />
+          )
         ) : (
           <div class="overlay">
             <h2 class="win">拿下了！</h2>
@@ -300,7 +346,7 @@ export function BattleScreen({
         <div class="overlay">
           <h2 class="lose">这把没拿下</h2>
           {girl.loseDialogue ? (
-            <DialogueLog lines={girl.loseDialogue} girlName={girl.name} />
+            <BattleDialogue lines={girl.loseDialogue} girlName={girl.name} />
           ) : b.fled ? (
             <p>小猴猫突然感觉一阵胸闷。不行，得休息了，话术经验涨了，下次再来（试出的喜好已记下）。</p>
           ) : (

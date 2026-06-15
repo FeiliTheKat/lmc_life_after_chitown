@@ -68,6 +68,9 @@ export interface MonkeyGirlDef {
 
   // 攻略限定（design §5.5）：设了则用别的才艺出招直接判负（豆包妹/幼师='singHero'）
   requiredTalent?: MoveKey;
+  // 收服前置招（2026-06-15）：设了则攻陷前必须至少用过这一招，否则进度再高也收不了
+  // （幼师='singHero'：不唱《英雄》无论如何收不掉，但其余攻略照常累积进度）。
+  requiredMove?: MoveKey;
   // 无失败型（design §5.4）：思小捌 —— 必收服、无失败结局
   noFail?: boolean;
   // 个人颜控阈值（design §5.4）：颜值达此线才"开窗"夸你；不写取 balance.loveLooksGate(70)。
@@ -255,9 +258,12 @@ export interface GameState {
     battle: BattleState;
   } | null;
   flash?: { text: string; img?: string } | null; // 行动反馈 toast（瞬时 UI，加载时清空）
+  pendingWhaleResult?: { text: string; img?: string } | null; // 鲸鱼事件结算结果（挽回单单等），在大弹窗里展示
+  dayStartSnapshot?: GameState | null; // 当天开始时的快照，用于"重来这一天"
   mulasakeeComment?: { text: string; context: 'hub' | 'battle'; uid: number } | null; // Mulasakee 旁观弹窗（右上角，瞬时）
   eventLog: EventLogEntry[];
   pendingEvent?: GameEvent | null; // 待玩家响应的事件
+  dayRestarted?: boolean; // 本天曾重来过，收工时跳过 flavor 事件
   battle?: BattleState | null; // 大秀进行中非空
   win: { conditions: WinConditionState; ended: boolean; result?: EndingType };
 }

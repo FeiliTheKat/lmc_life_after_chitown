@@ -75,6 +75,37 @@ export function canUseMove(move: MoveDef, game: GameState): boolean {
   return true;
 }
 
+// ── 才艺前置门「先聊完天再唱跳」（作者定制 2026-06-15）─────────────────────
+// 规则：唱歌/跳舞（才艺类）须先把该猴女郎**所有「话术」对白 beat 都聊出来**才解锁。
+// 没有话术对白的女郎（beat 数=0）→ 才艺即时可用，绝不卡死。
+
+/** 该猴女郎的「话术」对白共有几段 beat（=须聊出来的话术次数）。 */
+export function chatBeatsTotal(girl: MonkeyGirlDef): number {
+  return girl.moveReactions?.rhetoric?.length ?? 0;
+}
+
+/** 还差几句话术没聊（才艺解锁前的提示用）。 */
+export function chatBeatsRemaining(girl: MonkeyGirlDef, battle: BattleState): number {
+  return Math.max(0, chatBeatsTotal(girl) - (battle.moveUses?.rhetoric ?? 0));
+}
+
+/** 才艺门是否已开：所有话术 beat 都聊过了。 */
+export function talentUnlocked(girl: MonkeyGirlDef, battle: BattleState): boolean {
+  return chatBeatsRemaining(girl, battle) === 0;
+}
+
+/** 此招本回合是否可出（含才艺前置门）：UI 与引擎共用，确保按钮禁用与守卫一致。 */
+export function isMoveAvailable(
+  move: MoveDef,
+  game: GameState,
+  girl: MonkeyGirlDef,
+  battle: BattleState,
+): boolean {
+  if (!canUseMove(move, game)) return false;
+  if ((move.category === '才艺' || move.category === '颜值') && !talentUnlocked(girl, battle)) return false;
+  return true;
+}
+
 // ───────────────────────── 进入战斗 ─────────────────────────
 
 export function enterBattle(game: GameState, girl: MonkeyGirlDef): BattleState {
@@ -127,6 +158,10 @@ export function resolveTurn(
   if (!canUseMove(move, prevGame)) {
     return { battle: prevBattle, game: prevGame, changed: false };
   }
+  // 0b) 才艺/颜值前置门（2026-06-15）：没把话术聊完不能唱歌/跳舞/颜值反问 → 守卫不过，原样返回。
+  if ((move.category === '才艺' || move.category === '颜值') && !talentUnlocked(girl, prevBattle)) {
+    return { battle: prevBattle, game: prevGame, changed: false };
+  }
 
   const battle = structuredClone(prevBattle);
   const game = structuredClone(prevGame);
@@ -177,6 +212,19 @@ export function resolveTurn(
 
   // 7) 喜好显形（半隐藏，§5.7）
   maybeReveal(battle, cat, coef);
+
+  // looksGate 硬门（§5.4）：颜值未达个人阈值 → 禁止攻陷（须剪 ASEN 造型）。
+  // 2026-06-15：不再限 type，凡设了 looksGate 一律生效（小蓝/哈尼mm 等混合型也吃此门）。
+  if (girl.looksGate && effectiveLooks(game) < looksGateFor(girl)) {
+    battle.captureProgress = Math.min(battle.captureProgress, battle.threshold - 1);
+  }
+
+  // 收服前置招硬门（2026-06-15）：未用过指定招（含本回合）→ 攻陷卡在阈值下。
+  // 幼师 requiredMove='singHero'：不唱《英雄》无论如何收不掉，其余攻略只能堆到差一点。
+  if (girl.requiredMove) {
+    const used = moveKey === girl.requiredMove || (battle.moveUses?.[girl.requiredMove] ?? 0) > 0;
+    if (!used) battle.captureProgress = Math.min(battle.captureProgress, battle.threshold - 1);
+  }
 
   // 8) WIN 优先于反击（§5.2.1-1）
   if (battle.captureProgress >= battle.threshold) {
@@ -232,7 +280,10 @@ export function applyBattleResult(
     game.stats.rhetoricLvl += balance.battle.winRhetoric;
   } else if (battle.result === 'lose') {
     game.resources.fans += balance.battle.loseFans; // loseFans 为负
-    game.stats.rhetoricLvl += balance.battle.loseRhetoric; // 越战越强：失败 +3 话术
+    // 越战越强：认输时精力仍 >10 视为白嫖——不涨话术经验
+    if (!battle.fled || prevGame.resources.energy <= 10) {
+      game.stats.rhetoricLvl += balance.battle.loseRhetoric;
+    }
     rt.attempts += 1;
     // 试出的喜好保留到下次重试（§5.6）
     for (const c of battle.revealedThisBattle) {

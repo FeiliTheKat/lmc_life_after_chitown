@@ -4,6 +4,7 @@
  */
 import { balance } from '@/config/balance.config';
 import { applyDelta } from '@/systems/economy';
+import { randomAlbum, type AlbumDef } from '@/content/songs.data';
 import type { GameState } from '@/types';
 
 export type DailyActionKey = 'variety' | 'listen' | 'cereal';
@@ -15,11 +16,13 @@ export function resolveVariety(game: GameState): GameState {
   return applyDelta(game, { energy: a.energy, fans: a.fans, money: a.money, stress: a.stress });
 }
 
-/** 听歌（练 ASEN）：涨粉最慢但安全，才艺 +2。 */
-export function resolveListen(game: GameState): GameState {
+/** 听歌（练 ASEN）：涨粉最慢但安全，才艺 +2。
+ *  2026-06-15：随机听到的曲目若标了 noTalent（土鸡蛋曲库）→ 才艺不加分。
+ *  album 由调用方传入，确保与反馈 toast 展示的是同一张（默认随机兜底）。 */
+export function resolveListen(game: GameState, album: AlbumDef = randomAlbum()): GameState {
   const a = balance.actions.listen;
   const g = applyDelta(game, { energy: a.energy, fans: a.fans, money: a.money });
-  g.stats.talentLvl += a.talent; // stats 非资源，不走 applyDelta
+  if (!album.noTalent) g.stats.talentLvl += a.talent; // stats 非资源，不走 applyDelta
   return g;
 }
 
@@ -39,12 +42,16 @@ export function resolveCereal(game: GameState): GameState {
   return g;
 }
 
-export function resolveDailyAction(game: GameState, key: DailyActionKey): GameState {
+export function resolveDailyAction(
+  game: GameState,
+  key: DailyActionKey,
+  album?: AlbumDef,
+): GameState {
   switch (key) {
     case 'variety':
       return resolveVariety(game);
     case 'listen':
-      return resolveListen(game);
+      return resolveListen(game, album);
     case 'cereal':
       return resolveCereal(game);
   }

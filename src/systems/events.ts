@@ -121,7 +121,8 @@ export function pickEvent(game: GameState): GameEvent | null {
     return pick.kind === 'churn' ? bindChurn(pick, game, rng) : pick;
   }
 
-  // flavor：加权随机
+  // flavor：加权随机（重来这一天后跳过，§7.1）
+  if (game.dayRestarted) return null;
   const flavor = candidates.filter((e) => e.kind === 'flavor');
   const total = flavor.reduce((s, e) => s + (e.weight ?? 1), 0);
   let r = rng() * total;
@@ -181,6 +182,11 @@ export function applyEventOutcome(prev: GameState, event: GameEvent, choiceIndex
   clampResources(game.resources);
   const shown = resultText || event.text;
   game.eventLog.push({ day: game.calendar.currentDay, eventId: event.id, text: shown });
-  game.flash = outcome?.img ? { text: shown, img: outcome.img } : { text: shown };
+  // 鲸鱼留存掷骰结果 → 大弹窗展示（同 whale modal 风格）；其余走普通 toast。
+  if (outcome?.whaleRetainRoll) {
+    game.pendingWhaleResult = outcome.img ? { text: shown, img: outcome.img } : { text: shown };
+  } else {
+    game.flash = outcome?.img ? { text: shown, img: outcome.img } : { text: shown };
+  }
   return game;
 }

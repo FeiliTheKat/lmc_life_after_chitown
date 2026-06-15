@@ -1,5 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { pic } from '@/content/assets';
+import { stopBgm } from '@/engine/bgm';
 
 interface ImgEntry {
   src: string | undefined;
@@ -56,6 +57,10 @@ interface IntroScreenProps {
 
 export function IntroScreen({ onDone }: IntroScreenProps) {
   const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    new Audio('/music/21-questions.mp4');
+  }, []);
   const beat = BEATS[idx];
   const isLast = idx === BEATS.length - 1;
   const visibleImgs = beat.imgs?.filter((i) => i.src) ?? [];
@@ -98,7 +103,10 @@ export function IntroScreen({ onDone }: IntroScreenProps) {
         )}
         <button
           class={`primary intro-next${isLast ? ' launch' : ''}`}
-          onClick={() => (isLast ? onDone() : setIdx(idx + 1))}
+          onClick={() => {
+            if (isLast) { stopBgm(); onDone(); }
+            else setIdx(idx + 1);
+          }}
         >
           {isLast ? '明白了，开播！' : '下一页 →'}
         </button>

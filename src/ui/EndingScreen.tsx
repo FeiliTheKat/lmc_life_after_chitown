@@ -1,4 +1,5 @@
 import { resetGame } from '@/engine/bootstrap';
+import { stopBgm } from '@/engine/bgm';
 import { balance } from '@/config/balance.config';
 import { pic } from '@/content/assets';
 import { Credit } from '@/ui/Credit';
@@ -102,7 +103,7 @@ export function EndingScreen({ state }: { state: GameState }) {
           {balance.resources.fansGoal.toLocaleString()}
         </li>
       </ul>
-      <button class="primary" onClick={resetGame}>
+      <button class="primary" onClick={() => { stopBgm(); resetGame(); }}>
         再开一局
       </button>
       <Credit />

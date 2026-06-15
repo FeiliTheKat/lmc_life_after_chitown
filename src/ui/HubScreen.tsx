@@ -84,7 +84,7 @@ function PlayerStatus({ s }: { s: GameState }) {
           label="金钱"
           value={`¥${r.money}`}
           tip={
-            '赚：看综艺 +500 / 听歌 +200 / 大秀打赏 + 已收服猴女郎被动产出。\n花：买麦片 −300 / 剪 ASEN 造型 −1500 / 金钱攻略刷礼物。'
+            `赚：看综艺 +${balance.actions.variety.money} / 听歌 +${balance.actions.listen.money} / 大秀打赏 + 已收服猴女郎被动产出。\n花：买麦片 −${Math.abs(balance.actions.cereal.moneyBase)} / 剪 ASEN 造型 −${balance.asenStyle.cost} / 金钱攻略刷礼物。`
           }
         />
         <StatCell
@@ -93,7 +93,7 @@ function PlayerStatus({ s }: { s: GameState }) {
           sub={`/${balance.resources.fansGoal}`}
           tone="fans"
           tip={
-            '涨：看综艺 +800 / 听歌 +150 / 大秀赢 +500 + 被动产出。\n掉：大秀输或认输 −300 / 流失事件。目标 9 万→10 万。'
+            `涨：看综艺 +${balance.actions.variety.fans} / 听歌 +${balance.actions.listen.fans} / 大秀赢 +${balance.battle.winFans} + 被动产出。\n掉：大秀输或认输 ${balance.battle.loseFans} / 流失事件。目标 9 万→10 万。`
           }
         />
         <StatCell
@@ -119,12 +119,12 @@ function PlayerStatus({ s }: { s: GameState }) {
         <StatCell
           label="才艺"
           value={s.stats.talentLvl}
-          tip={'听歌 +2。决定才艺攻略（唱《英雄》/ 跳抓钱舞）的强度。'}
+          tip={'听歌 +1。决定才艺攻略（唱《英雄》/ 跳抓钱舞）的强度。'}
         />
         <StatCell
           label="颜值"
           value={looks}
-          tip={'基础 70；剪 ASEN 造型拉满 100。颜值反问攻略（对颜控女主播）靠它。'}
+          tip={'基础 60；剪 ASEN 造型拉满 100。颜值反问攻略（对颜控女主播）靠它。'}
         />
       </div>
     </section>
@@ -231,6 +231,8 @@ export function HubScreen({
   const sakeeAccepts = sakeeShowsUp(state);
   const cerealPrice = currentCerealCost(state.resources.cerealBought ?? 0);
   const a = balance.actions;
+  // 连线完 Mulasakee 之后，锁住除睡觉/返回标题外的所有操作
+  const sakeeDefeated = !!sakee && state.girls[sakee.id]?.status === 'signed';
 
   return (
     <main class="screen hub">
@@ -242,21 +244,21 @@ export function HubScreen({
             <h2>今天干点啥</h2>
             <div class="btn-row">
               <button
-                disabled={lowEnergy(-a.variety.energy)}
+                disabled={sakeeDefeated || lowEnergy(-a.variety.energy)}
                 onClick={() => controller.performDailyAction('variety')}
               >
                 看综艺<small>涨粉快·压力+</small>
                 <span class="btn-tip">{`精力 ${a.variety.energy} / 粉丝 +${a.variety.fans} / 金钱 +${a.variety.money} / 压力 +${a.variety.stress}`}</span>
               </button>
               <button
-                disabled={lowEnergy(-a.listen.energy)}
+                disabled={sakeeDefeated || lowEnergy(-a.listen.energy)}
                 onClick={() => controller.performDailyAction('listen')}
               >
                 听歌<small>安全·才艺+</small>
                 <span class="btn-tip">{`精力 ${a.listen.energy} / 粉丝 +${a.listen.fans} / 金钱 +${a.listen.money} / 才艺 +${a.listen.talent}`}</span>
               </button>
               <button
-                disabled={state.resources.money < cerealPrice}
+                disabled={sakeeDefeated || state.resources.money < cerealPrice}
                 onClick={() => controller.performDailyAction('cereal')}
               >
                 买麦片吃
@@ -276,7 +278,7 @@ export function HubScreen({
                 {challengeable.map((g) => (
                   <button
                     key={g.id}
-                    disabled={!anyAffordable}
+                    disabled={sakeeDefeated || !anyAffordable}
                     onClick={() => controller.startBattle(g.id)}
                   >
                     {g.name}
@@ -287,12 +289,12 @@ export function HubScreen({
                   <button
                     key={sakee.id}
                     class="sakee-challenge"
-                    disabled={sakeeAccepts && !anyAffordable}
+                    disabled={sakeeDefeated || (sakeeAccepts && !anyAffordable)}
                     onClick={() =>
                       sakeeAccepts ? controller.startBattle(sakee.id) : controller.rejectSakee()
                     }
                   >
-                    {sakeeAccepts ? `⚡ ${sakee.name} 空降连麦` : sakee.name}
+                    {sakeeAccepts ? `⚡ ${sakee.name} 空降连麦` : '???'}
                     <small>{sakeeAccepts ? '神秘嘉宾 · 最后一天' : '神秘嘉宾 · 连麦邀请'}</small>
                   </button>
                 )}
@@ -304,7 +306,11 @@ export function HubScreen({
             <h2>形象</h2>
             <div class="btn-row">
               <button
-                disabled={state.stats.asenStyle || state.resources.money < balance.asenStyle.cost}
+                disabled={
+                  sakeeDefeated ||
+                  state.stats.asenStyle ||
+                  state.resources.money < balance.asenStyle.cost
+                }
                 onClick={() => controller.buyAsenStyle()}
               >
                 {state.stats.asenStyle ? '已剪 ASEN 造型 ✓' : '剪一个 ASEN 的造型'}
@@ -322,9 +328,22 @@ export function HubScreen({
       </div>
 
       <section class="panel">
-        <button class="primary sleep" onClick={() => controller.endDay()}>
-          下播睡觉 · 结束第 {state.calendar.currentDay} 天<small>精力回满，进入下一天</small>
-        </button>
+        <div class="btn-row sleep-row">
+          <button
+            class="secondary restart-day"
+            disabled={!state.dayStartSnapshot}
+            onClick={() => controller.restartDay()}
+          >
+            重来这一天
+            <small>回滚今天所有行动</small>
+          </button>
+          <button class="primary sleep" onClick={() => controller.endDay()}>
+            {sakeeDefeated
+              ? '结束直播，准备明天的蛋仔派对'
+              : `下播睡觉 · 结束第 ${state.calendar.currentDay} 天`}
+            <small>{sakeeDefeated ? '' : '精力回满，进入下一天'}</small>
+          </button>
+        </div>
       </section>
 
       <section class="panel return-panel">

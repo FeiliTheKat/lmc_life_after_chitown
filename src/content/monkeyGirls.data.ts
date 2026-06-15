@@ -100,17 +100,17 @@ const hanimmLines = {
 };
 
 export const MONKEY_GIRLS: MonkeyGirlDef[] = [
-  // ── #1 思小捌（颜值/颜控 · tier1 · noFail，girls/sixiaoba.md 定稿）
+  // ── #1 思小捌（颜值/颜控 · tier1，girls/sixiaoba.md 定稿）
   {
     id: 'girl_sixiaoba',
     name: '思小捌',
-    type: '颜控',
+    type: '混合',
     tier: 1,
-    noFail: true,
+    resist: { 颜值: 1.0, 话术: 1.0, 才艺: 1.0, 金钱: 0.8 }, // 金钱弱效防前期速通（作者定 2026-06-15）
     playsEnemySong: false,
     inChurnPool: false,
     captureScript:
-      '〔颜值反问·必触发〕怎么样，是不是有点痞帅？喜欢这种感觉吗，妹妹？……你现在已经是我们猴猫传媒旗下 top one 的猴女郎了，有没有感觉？',
+      '〔颜值反问〕怎么样，是不是有点痞帅？喜欢这种感觉吗，妹妹？……你现在已经是我们猴猫传媒旗下 top one 的猴女郎了，有没有感觉？',
     introDialogue: [
       sixiaobaLines.intro_narration,
       sixiaobaLines.intro_girl_hello,
@@ -137,6 +137,21 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
         ],
       ],
     },
+    loseDialogue: [
+      {
+        who: 'narration',
+        text: '思小捌完全不理你了，弹幕也安静了——就剩下你一个人在那儿尬聊。',
+      },
+      { who: 'monkey', text: '（卡壳）这个……这个……' },
+      { who: 'girl', text: '（望向弹幕，轻轻摇头）大哥们，他不行。' },
+      { who: 'monkey', text: '不是不是，我是隔壁刚过来的，有点……太紧张了。' },
+      { who: 'girl', text: '哇，你们说的真的假的，什么情况？（已经开始招呼别的弹幕了）' },
+      { who: 'girl', text: '哟，我这边有个大哥刚进来，先招待一下哦～有缘再聊！' },
+      {
+        who: 'monkey',
+        text: '（无奈的对弹幕说）：没办法兄弟们，对面火箭队名宿，撤了，撤了吧。 ',
+      },
+    ],
     winDialogue: [
       sixiaobaLines.cashDance_beat0_narration,
       sixiaobaLines.cashDance_beat0_monkey,
@@ -155,7 +170,7 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
         text: '有一说一。我们有个猴猫传媒，我们叫猴猫家族，猴猫家族底下有猴猫传媒。你现在已经成为我们猴猫传媒旗下 top one 的猴女郎了，有没有感觉？你要不要加入我们猴猫传媒啊？',
       },
       { who: 'girl', text: 'OK~' },
-      { who: 'monkey', text: '我喜欢，太喜欢了。' },
+      { who: 'monkey', text: '（对弹幕说）我滴乖，这个我太喜欢了，B站是所有直播平台的第一！' },
     ],
     assets: {
       scenes: [
@@ -170,8 +185,10 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   {
     id: 'girl_laohuoji',
     name: '老火姬',
-    type: '话术',
+    type: '混合',
     tier: 2,
+    resist: { 话术: 1.0, 颜值: 1.0, 才艺: 0.4, 金钱: 0.4 }, // 混合·难搞：仅话术+颜值有效（作者定 2026-06-15）
+    counterPower: 10, // tier2 默认 8 之上，更难
     playsEnemySong: false,
     inChurnPool: true,
     introHook: LAOHUOJI_HOOK,
@@ -276,7 +293,7 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
     },
   },
 
-  // ── #6 单单（鲸鱼·混合 颜值+才艺·tier2·noFail；girls/dandan.md 全弧光定稿 2026-06-14：
+  // ── #6 单单（鲸鱼·混合 颜值+才艺·tier2；girls/dandan.md 全弧光定稿 2026-06-14：
   //     征服 winDialogue + 黑牛/表白事件配图 dandan2/3 已接入）
   {
     id: 'girl_dandan',
@@ -284,7 +301,6 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
     type: '混合',
     tier: 2,
     resist: { 颜值: 1.0, 才艺: 1.0 },
-    noFail: true, // 鲸鱼必被收服，戏在后面的失去
     isWhale: true,
     inChurnPool: false, // 不进常规流失池，走专属意外事件
     playsEnemySong: false,
@@ -368,6 +384,29 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
         text: '（下播后，自言自语）兄弟们，这个真不一样……我靠，她不会真有点爱上我了？',
       },
     ],
+    loseDialogue: [
+      {
+        who: 'narration',
+        text: '话说得太顺了，她反而听出味儿来了——这套话术，不只是给她一人的。',
+      },
+      { who: 'monkey', text: '你还没加入猴猫传媒吧？有一说一，我们猴猫家族……' },
+      { who: 'girl', text: '（轻轻打断）你不是说，对我完全不一样吗？' },
+      { who: 'monkey', text: '对，就是不一样，你是 top……' },
+      { who: 'girl', text: '……感觉弹幕跟着你一起把词打出来了。' },
+      {
+        who: 'narration',
+        text: '她没在撒气，就是说了个事实。那副呆萌样没变，但眼神收回来了。',
+      },
+      { who: 'girl', text: '你们这边人刷屏的人太多了。祝你天天开心，拜拜。' },
+      {
+        who: 'narration',
+        text: '屏幕黑了。她没拉黑，只是没互关——这种感觉，比拉黑还难受一点。',
+      },
+      {
+        who: 'monkey',
+        text: '（气急败坏）你们不要刷辣个，不要刷辣个，这个很安逸的，兄弟们。',
+      },
+    ],
     // 逐招对白（girls/dandan.md 真迹）：话术多 beat 递进；颜值反问=姑家弟弟；
     // 才艺两手分给唱《英雄》与 Monkey Freestyle；金钱非她口味，走中性兜底。
     moveReactions: {
@@ -434,21 +473,6 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
           { who: 'girl', text: '闹得麻麻的。这要把我的肚肚给笑炸了。' },
         ],
       ],
-      cashDance: [
-        [
-          {
-            who: 'monkey',
-            text: '我唱一首 Monkey Focused Freestyle，专门为你而唱的，原创曲目，好听不？',
-          },
-          dandanLines.freestyleReview,
-          { who: 'girl', text: '我觉得只要勇敢唱都不会难听的。大大方方唱就是好听。' },
-          { who: 'narration', text: '〔才艺·另一手命中〕——她还把"大大方方"原样还了回来。' },
-          { who: 'monkey', text: '"大大方方"是我们的原创梗，我创的！来跟我念：爆了爆了。' },
-          { who: 'girl', text: '爆了爆了。' },
-          { who: 'monkey', text: '闹得麻麻的。真是要把我肚肚都笑炸啊。' },
-          { who: 'girl', text: '闹得麻麻的。这要把我的肚肚给笑炸了。' },
-        ],
-      ],
     },
     assets: {
       scenes: [
@@ -467,6 +491,7 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
     name: '豆包妹',
     type: '金钱',
     tier: 1,
+    resist: { 金钱: 1.0 }, // 金钱有效但不双倍；其余走 coefOffType 默认
     playsEnemySong: false,
     inChurnPool: true,
     introHook: '随机连到豆包妹——大方、玩得起的女主播，她会成为小猴猫的 day1 吗？',
@@ -562,11 +587,10 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   {
     id: 'girl_youshi',
     name: '幼师',
-    type: '才艺',
+    type: '混合',
     tier: 1,
-    requiredTalent: 'singHero',
-    playsEnemySong: true,
-    enemySongRef: '牛和马',
+    resist: { 颜值: 1.0, 话术: 1.0, 才艺: 1.0, 金钱: 0.8 }, // 金钱弱效防前期速通（作者定 2026-06-15）
+    requiredMove: 'singHero', // 不唱《英雄》无论如何收不掉（作者定 2026-06-15）
     inChurnPool: true,
     introHook:
       '随机匹配到"幼师"——看似傻白甜的女主播有一副浑然天成的辣条音。直播间正在放着牛和马的歌。小猴猫能感化她吗？',
@@ -622,7 +646,7 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
           { who: 'monkey', text: '你今天连到我，真是积德了。来，给我们来首说唱不过分吧。' },
           {
             who: 'narration',
-            text: '幼师张口就是三条a、牛和马、法年轻大串烧——土鸡蛋味直冲天灵盖。',
+            text: '幼师张口就是三条a、牛和马、法年轻大串烧——闹得麻麻的。',
           },
         ],
       ],
@@ -643,7 +667,6 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       { who: 'monkey', text: '行，今天就到这了，拜拜。兄弟们，唱的我累死了。' },
     ],
     loseDialogue: [
-      { who: 'narration', text: '《英雄》没唱进去——这回幼师不光不吃，还反手给你上了一课。' },
       {
         who: 'girl',
         text: '（不为所动）行了行了。我跟你说，我去海口看过 Travis 演唱会，现场蛮开心的。我最喜欢坑爹老妹儿的 N95，三条a 我也想看现场，牛和马、法年轻我都听。',
@@ -653,15 +676,15 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       { who: 'monkey', text: '你跟风看个演唱会还回头教育我？你那叫陪看。' },
       {
         who: 'girl',
-        text: '陪看我也比你强。你这种洋鸡蛋，整天 ASEN 长 ASEN 短、芝加哥这个芝加哥那个，我们土鸡蛋它不香吗？哥几个，给我把他闭了。',
+        text: '陪看我也比你强。你这种洋鸡蛋，整天 ASEN 长 ASEN 短、这个老黑那个老黑的，我就爱听点牛和马怎么了？ ',
       },
       {
         who: 'narration',
-        text: '弹幕一边倒判幼师赢，她顺手把小猴猫闭了麦。土鸡蛋大获全胜，洋鸡蛋被请出了房间。',
+        text: ' 弹幕一看到ASEN被攻击，直接去把对面直播间围绕住了，铁丝网和图鉴一起刷屏，幼师一句话没说就把pk挂断了 ',
       },
       {
         who: 'monkey',
-        text: '（对着空屏幕嘴硬）跟风狗，连张专辑名都报不出，懂个球。这把不算，重新开，兄弟们下一个。',
+        text: '（气急败坏）你们不要刷辣个，不要刷辣个，这个很安逸的，兄弟们。',
       },
     ],
     assets: {
@@ -678,8 +701,10 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   {
     id: 'girl_tiancaiyu',
     name: '甜菜鱼',
-    type: '话术',
+    type: '混合',
     tier: 2,
+    resist: { 话术: 0.5, 颜值: 1.0, 才艺: 0.4, 金钱: 0.4 }, // 混合·难搞：话术被反克（嘴皮子比她快不了）、颜值有效；才艺/金钱弱效
+    counterPower: 10, // tier2 默认 8 之上，更难
     playsEnemySong: false,
     inChurnPool: true,
     introHook: '随机匹配到甜菜鱼——小孩音太难绷。扛住她的连珠炮，话术才能命中。',
@@ -862,15 +887,11 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       },
     ],
     loseDialogue: [
-      { who: 'narration', text: '话术没撬开她，光顾着想看——' },
-
+      { who: 'narration', text: '2绷一句话没说，直接部署了机器人大军，机器人全来直播间围绕了！' },
+      { who: 'narration', text: ' 满屏的机器人和铁丝网直接把小猴猫的拯救者干冒烟了 ' },
+      { who: 'monkey', text: '兄弟们兄弟们，我弹幕卡了，我看不到你们发的弹幕了！' },
       { who: 'girl', text: '你也太低俗了，别给我封了你这个。我走了。' },
       { who: 'monkey', text: '别别别，2绷别走，开玩笑的——' },
-      { who: 'narration', text: '可这回她是真走了。深度思考都省了，直接关了连麦。' },
-      {
-        who: 'monkey',
-        text: '（慌）哎，没了？这机器人直接没了，我还没跟她互关呢……光顾着看，把人吓跑了。',
-      },
     ],
     assets: { scenes: [{ key: 'idle', src: '2bong.webp' }] },
   },
@@ -879,8 +900,10 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   {
     id: 'girl_uu',
     name: 'uu',
-    type: '金钱',
+    type: '混合',
     tier: 3,
+    resist: { 金钱: 1.0, 话术: 1.0, 才艺: 0.4, 颜值: 0.4 }, // 混合·难搞：仅金钱+话术有效（作者定 2026-06-15）
+    counterPower: 13, // tier3 默认 11 之上，更难
     playsEnemySong: false,
     inChurnPool: true,
     introHook:
@@ -943,13 +966,12 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       },
       {
         who: 'girl',
-        text: '（皱眉，闷闷地）……你跟以前一样。我当初就是觉得你这样太低俗才举报你的。',
+        text: '（皱眉，闷闷地）……你怎么还跟以前一样。我当初就是觉得你这样太低俗才举报你的。',
       },
-      { who: 'narration', text: '弹幕氛围一僵。uu 没接梗，矜持的壳又缩了回去。' },
       { who: 'girl', text: '（冷淡）我先去看看我室友那边，她叫我。拜拜。' },
       {
         who: 'monkey',
-        text: '（讪讪）哎别走啊……得，又给整回去了。光想着看脐钉，把人前黑粉的底线踩了。',
+        text: '（讪讪）哎别走啊……哎呀，兄弟们不要捣乱，这个很安逸的。',
       },
       {
         who: 'narration',
@@ -1038,17 +1060,26 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
     loseDialogue: [
       {
         who: 'narration',
-        text: '光想着看擦边、一个攻略往死里刷，没把组合拳打出来——这种 60w 粉的老直播员，可不好糊弄。',
+        text: '猴子猴孙的猴头全起立了，弹幕炸了锅——"这个很安逸的"，"我滴乖"，"好妹妹"，"安逸"，"别摧毁了"，"这才是真正的直播" …… 哈尼mm 也没绷住，直接笑出声来了。',
       },
-      { who: 'monkey', text: '好妹妹，多机位有不？线下福利呢？给大伙儿亮一下呗。' },
-      { who: 'girl', text: '（气场全开，慢悠悠）你就这点东西啊？我见过的场面，多了去了。' },
-      { who: 'narration', text: '哈尼mm 不咸不淡地晾着你，拳套也不刷了，场子一点点凉下去。' },
+      {
+        who: 'monkey',
+        text: '好妹妹，你知道B站那些主播都有多机位不？下次你搞个多机位给大伙儿大大方方的展示一下呗。',
+      },
+      {
+        who: 'girl',
+        text: '（慢悠悠）你以为就你知道啊？我见过的场面，多了去了，叫你的粉丝别在我这刷屏了',
+      },
       { who: 'girl', text: '行了，我这边还有事，下次吧。拜拜。' },
       {
         who: 'monkey',
-        text: '（讪讪）哎……让人家老直播员给晾这儿了。光擦边没真东西，镇不住她。',
+        text: '兄弟们千万不要去对面摧毁，这个很安逸的，下次连到千万别摧毁了',
       },
-      { who: 'narration', text: '60w 粉的御姐，岂是几句擦边话能拿下的。组合拳没打出来，凉了。' },
+      {
+        who: 'monkey',
+        text: '（讪讪）哎……这个是真的安逸，绝对火箭队名宿来的，可惜了。',
+      },
+      { who: 'narration', text: '这位眼光奇高，普通帅入不了她的眼。下回剪了 ASEN 的造型再问吧。' },
     ],
     assets: {
       scenes: [
@@ -1064,8 +1095,9 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   {
     id: 'girl_blue',
     name: '小蓝',
-    type: '颜控',
+    type: '混合',
     tier: 3,
+    resist: { 颜值: 1.0, 话术: 1.0, 才艺: 1.0, 金钱: 1.0 }, // 混合·不受克制（作者定 2026-06-15）
     looksGate: 100, // 须先剪 ASEN 造型才开窗（design §5.4 教学钩）
     playsEnemySong: false,
     inChurnPool: true,
@@ -1156,37 +1188,58 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
     resist: { 颜值: 1.0, 才艺: 1.0 },
     isHidden: true,
     inChurnPool: false,
-    introHook: '最后一天。粉丝快到了，猴女郎也集齐了。然后——他空降了你的连麦区。',
+    introHook: '最后一天。连麦请求进来了——弹幕先认出了他，你才跟上。',
     introDialogue: [
-      { who: 'narration', text: '最后一天。粉丝快到了，猴女郎也集齐了。然后——他空降了你的连麦区。' },
-      { who: 'narration', text: '弹幕炸了：「Mulasakee 连麦来了」「这是 Digi 的 Sakee！」「你完了」「小猴猫，斩！」' },
-      { who: 'girl', text: '（慢悠悠）朕来会会你这「猴猫宇宙」。且看你有几分斤两。' },
       {
-        who: 'monkey',
-        text: '哎，永玄大帝？稀客稀客。来都来了，那就玩一把——兄弟们稳住，节目效果来了。',
+        who: 'narration',
+        text: '最后一天。进度条将满，阵容完整。连麦请求进来的时候，弹幕先炸了——你才认出那个头像。',
       },
+      {
+        who: 'narration',
+        text: '「永玄神武！」「Digi 的 Sakee 来了！」「小猴猫，斩！」「玄尬是来干嘛的」弹幕直接炸锅了。',
+      },
+      { who: 'girl', text: '孤旁观十八日了。今日，孤要亲自来看一眼。' },
+      { who: 'monkey', text: '（笑）不尬不尬，等下我让我猴子猴孙送你点图鉴。' },
     ],
     captureScript:
-      '〔赢下了，可他没走——卸下那股「朕」腔，一个一个把问题抛给你。问完，没等回答，就下了播。〕',
+      '〔赢下了，可Sakee却没走——他卸下了那股腔调，一个一个把问题抛给你。问完，没等回答，就下了播。〕',
     // 赢后「21 问」（mulasakee.md 定稿）：化用 ASEN《21个问题》真句 + 两记《英雄》暗器；
     // Sakee 从文言切回大白话，小猴猫全程沉默，每句之间靠打字机留白。
     winDialogue: [
+      // ── 独白：Sakee 败后认输，文言腔开始松动
       {
         who: 'narration',
-        text: '进度条满了，按往常你该收人了。可对面那个人没走。他沉默了一下，那股「朕」的腔调，一下子没了。',
+        text: '小猴猫击败了 Sakee。Sakee 先是沉默了好几秒，随后缓缓开口——那股「永玄大帝」的腔调，开始慢慢落了下去。',
       },
-      { who: 'girl', text: '你天天在这儿，追的是啥子？你到底想成为哪个？' },
+      { who: 'girl', text: '孤……负此局。（停了一下）……孤认。' },
+      {
+        who: 'girl',
+        text: '孤旁观十八日，所见颇多。你唱着那首歌、顶着那个造型、一路招揽妹妹——这套路，你用得很顺。',
+      },
+      {
+        who: 'girl',
+        text: '孤今有数问，猴卿可愿答之？',
+      },
+      {
+        who: 'narration',
+        text: ' Sakee 说完这句，停了好几秒。小猴猫也沉默着，等了好几秒，才说「愿意」。',
+      },
+      // ── 21 问：Sakee 切回大白话，小猴猫全程沉默
+      { who: 'girl', text: '你天天在这儿直播，追求的是啥子？你想成为哪个？' },
       { who: 'girl', text: '你每天插科打诨、扮丑、整活——你想给这个世界带来点啥子？' },
-      { who: 'girl', text: '你那个半真半假的人设，是一条路走到黑，还是……对你自己撒的谎？' },
+      { who: 'girl', text: '你那些半真半假的人设，是一条路走到黑，还是……对你自己撒的谎？' },
       {
         who: 'girl',
-        text: '你会不会为了那点欢呼、那点拳套，说几句谎话？你心里清楚得很——有人，把你说的话当真了。',
+        text: '你会不会为了那点流量、那点礼物，说几句谎话？你心里清楚得很——有人，把你说的话当真了。',
       },
       {
         who: 'girl',
-        text: '他自己唱的——「骗哈儿妹妹，你不可能走到最后」。你这一后宫的妹妹，哪个不是你骗进来的？',
+        text: '歌里唱的——「骗哈儿妹妹，你不可能走到最后」。你这一后宫的妹妹，哪个不是你骗进来的？',
       },
-      { who: 'girl', text: '他还唱「大闹天宫后的美猴王」。你这身猴皮，是不是也是从他那句里扒下来的？' },
+      {
+        who: 'girl',
+        text: 'ASEN说他是「大闹天宫后的美猴王」。你这身猴皮，是不是也是从他那句里扒下来的？',
+      },
       { who: 'girl', text: '等哪天唱《英雄》不涨粉了、不帅了，你还唱不唱？' },
       {
         who: 'girl',
@@ -1195,7 +1248,7 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       { who: 'girl', text: '（停了很久）……今后的路，该怎么走啊？' },
       {
         who: 'narration',
-        text: '他问完了，没等回答。屏幕静下来。弹幕一行没有，过了好几秒，才稀稀拉拉飘出几个「？」。小猴猫盯着屏幕，没说话。',
+        text: '他问完了，没等回答。屏幕静下来。弹幕一条也没有，过了好几秒，才稀稀拉拉飘出几个「？」。小猴猫盯着屏幕，没说话。',
       },
     ],
     assets: {

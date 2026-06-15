@@ -2,7 +2,7 @@
  * 进度系统：tier 门控 + 胜利三条件判定（design §5.1 / §6.2）。纯函数。
  */
 import { balance } from '@/config/balance.config';
-import { girlDef } from '@/content/monkeyGirls.data';
+import { MONKEY_GIRLS, girlDef } from '@/content/monkeyGirls.data';
 import type { GameState, MonkeyGirlDef, WinConditionState } from '@/types';
 
 /** 当前粉丝数对应可挑战的 girl.tier 档位（PRD 2.5 里程碑门控）。 */
@@ -44,13 +44,27 @@ export function sakeeShowsUp(game: GameState): boolean {
   return game.calendar.currentDay >= game.calendar.totalDays && sakeeReady(game);
 }
 
+/** 上一 tier 所有普通女主播都已了结（签下或流失），才解锁更高 tier。
+ *  注意：流失（churned）的对手 canChallenge 里已禁止再 PK，故解锁条件不能要求"全部签下"，
+ *  否则一旦在某档流失任意一人，更高 tier 会被永久锁死。"已了结"即视为这条对手线走完。 */
+function prevTierResolved(tier: number, game: GameState): boolean {
+  if (tier <= 1) return true;
+  return MONKEY_GIRLS.filter((g) => !g.isHidden && g.tier === tier - 1).every((g) => {
+    const rt = game.girls[g.id];
+    // 未登记到本局名单的对手不计入门控；登记的须已了结（签下或流失）
+    return rt == null || rt.status !== 'unmet';
+  });
+}
+
 /** 该猴女郎此刻是否可挑战（门控 + 未收服/未流失）。 */
 export function canChallenge(girl: MonkeyGirlDef, game: GameState): boolean {
   const rt = game.girls[girl.id];
   if (rt && rt.status !== 'unmet') return false; // 已收服/已流失，不再 PK
   // 隐藏第 11（Mulasakee）：不靠粉丝门控，只在最后一天满足空降条件时由他主动出现（§7.5）
   if (girl.isHidden) return sakeeShowsUp(game);
-  return fansGateTiers(game.resources.fans).includes(girl.tier);
+  if (!fansGateTiers(game.resources.fans).includes(girl.tier)) return false;
+  // 上一 tier 全部了结（签下或流失）才解锁更高 tier
+  return prevTierResolved(girl.tier, game);
 }
 
 /** 胜利三条件当前状态（§6.2，fansReached 用"判定时刻"口径）。 */

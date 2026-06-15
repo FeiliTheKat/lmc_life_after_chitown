@@ -6,6 +6,7 @@ import {
   resistCoef,
   movePower,
   applyBattleResult,
+  talentUnlocked,
 } from './battleEngine';
 import { MOVES } from '@/content/moves.data';
 import { balance } from '@/config/balance.config';
@@ -137,6 +138,39 @@ describe('感化暴击仅唱《英雄》（§5.5）', () => {
     expect(sing.battle.captureProgress).toBe(40); // 10×2×1×2
     const dance = resolveTurn(enterBattle(game, girl), game, girl, 'cashDance');
     expect(dance.battle.captureProgress).toBe(20); // 10×2×1×1
+  });
+});
+
+describe('才艺前置门「先聊完话术再唱跳」（2026-06-15）', () => {
+  const talker = { rhetoric: [[{ who: 'monkey' as const, text: 'a' }], [{ who: 'monkey' as const, text: 'b' }]] };
+
+  it('没聊完所有话术 beat → 才艺被守卫挡下（原样返回），话术/其它招不受限', () => {
+    const girl = makeGirl({ type: '才艺', tier: 1, moveReactions: talker }); // 2 段话术 beat
+    const game = makeGame({ girls: [girl], stats: { talentLvl: 5 } });
+    const battle = enterBattle(game, girl);
+    // 一上来唱歌：被才艺门挡下，changed=false、state 原样
+    const blocked = resolveTurn(battle, game, girl, 'singHero');
+    expect(blocked.changed).toBe(false);
+    expect(blocked.battle.captureProgress).toBe(0);
+    // 话术不受门限制，可正常出
+    expect(resolveTurn(battle, game, girl, 'rhetoric').changed).toBe(true);
+  });
+
+  it('把所有话术 beat 都聊出来后 → 才艺解锁', () => {
+    const girl = makeGirl({ type: '才艺', tier: 1, moveReactions: talker });
+    const game = makeGame({ girls: [girl], stats: { talentLvl: 5 } });
+    const battle = enterBattle(game, girl);
+    battle.moveUses = { rhetoric: 2 }; // 已聊满 2 段
+    expect(talentUnlocked(girl, battle)).toBe(true);
+    expect(resolveTurn(battle, game, girl, 'singHero').changed).toBe(true);
+  });
+
+  it('无话术对白的女郎 → 才艺即时可用，不卡死', () => {
+    const girl = makeGirl({ type: '才艺', tier: 1 }); // 无 moveReactions
+    const game = makeGame({ girls: [girl], stats: { talentLvl: 5 } });
+    const battle = enterBattle(game, girl);
+    expect(talentUnlocked(girl, battle)).toBe(true);
+    expect(resolveTurn(battle, game, girl, 'singHero').changed).toBe(true);
   });
 });
 

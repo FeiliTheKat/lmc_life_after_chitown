@@ -7,7 +7,7 @@
 import { balance } from '@/config/balance.config';
 import { clampResources } from '@/systems/economy';
 import { resolveDailyAction, type DailyActionKey } from '@/systems/actions';
-import { sakeeHubComment, sakeeBattleComment, sakeeBattleTaunt } from '@/content/mulasakeeReactions';
+import { sakeeHubComment, sakeeBattleComment, sakeeBattleTaunt, sakeeRejectLine } from '@/content/mulasakeeReactions';
 import {
   enterBattle,
   resolveTurn,
@@ -17,7 +17,7 @@ import { evalWinConditions, isVictory } from '@/systems/progression';
 import { pickEvent, applyEventOutcome } from '@/systems/events';
 import { girlDef } from '@/content/monkeyGirls.data';
 import { moveReactionLines } from '@/content/moveReactions';
-import { randomAlbum } from '@/content/songs.data';
+import { randomAlbum, type AlbumDef } from '@/content/songs.data';
 import type { GameState, MoveKey } from '@/types';
 import type { Store } from '@/engine/store';
 
@@ -61,6 +61,11 @@ export function advanceDay(prev: GameState): GameState {
   }
   markWhaleEventReady(g); // 鲸鱼高产期满 → 置位，收工时触发 whale 意外事件（§7.3）
   clampResources(g.resources);
+  // 保存当天开始快照（不含快照自身，避免循环嵌套）
+  g.dayRestarted = false;
+  // 深拷贝快照：必须切断与 live state 的引用共享，否则当天 applyDelta/applyBattleResult
+  // 的原地改动（structuredClone 会保留内部共享引用）会顺带改掉快照，导致"重来"失效。
+  g.dayStartSnapshot = structuredClone({ ...g, dayStartSnapshot: null });
   return g;
 }
 
@@ -140,6 +145,7 @@ function buildActionFlash(
   before: GameState,
   after: GameState,
   overflow: boolean,
+  album?: AlbumDef,
 ): { text: string } {
   let flavor: string;
   switch (key) {
@@ -151,8 +157,11 @@ function buildActionFlash(
           : '小猴猫看了一会儿土鸡蛋综艺，引了一大波流！';
       break;
     case 'listen': {
-      const a = randomAlbum();
-      flavor = `小猴猫打开《${a.title}》（${a.artist}），大大方方地享受起来。`;
+      const a = album ?? randomAlbum();
+      // noTalent 曲目（土鸡蛋曲库）→ 才艺不加分，给一条对应的"白听了"反馈
+      flavor = a.noTalent
+        ? `小猴猫打开《${a.title}》（${a.artist}），越听越没劲，这种土鸡蛋玩意儿，才艺一点没涨。`
+        : `小猴猫打开《${a.title}》（${a.artist}），大大方方地享受起来。`;
       break;
     }
     case 'cereal':
@@ -185,6 +194,10 @@ export interface GameController {
   buyAsenStyle(): void;
   /** 清掉行动反馈 toast。 */
   clearFlash(): void;
+  /** 关掉鲸鱼事件结算大弹窗（挽回单单等）。 */
+  clearWhaleResult(): void;
+  /** 重来这一天：恢复到今天开始时的快照（精力/资源/行动全回滚）。 */
+  restartDay(): void;
   /** 清掉 Mulasakee 旁观弹窗。 */
   clearMulasakeeComment(): void;
   /** 战斗结果展示后清掉 overlay（结果已在 battleTurn/fleeBattle 落库、天已推进）。 */
@@ -196,15 +209,19 @@ export function createGameController(store: Store<GameState>): GameController {
 
   return {
     startGame() {
-      store.setState({ ...get(), phase: 'DAY_HUB' });
+      const g = { ...get(), phase: 'DAY_HUB' as const };
+      // 第 1 天快照（advanceDay 不走，手动存一次）。深拷贝切断引用共享，见 advanceDay 注释。
+      store.setState({ ...g, dayStartSnapshot: structuredClone({ ...g, dayStartSnapshot: null }) });
     },
 
     performDailyAction(key) {
       const before = get();
-      let g = resolveDailyAction(before, key);
+      // 听歌：先定下今天随机听到的曲目，让"才艺是否加分"与反馈 toast 用同一张
+      const album = key === 'listen' ? randomAlbum() : undefined;
+      let g = resolveDailyAction(before, key, album);
       if (g === before) return; // 没生效（如买不起麦片）
       const overflow = g.resources.stress >= balance.resources.stressMax;
-      g.flash = buildActionFlash(key, before, g, overflow);
+      g.flash = buildActionFlash(key, before, g, overflow, album);
       g.mulasakeeComment = sakeeHubComment(key);
       // 一天内可做多个行动、不进天；只有压力爆表才强制结束当天 + 停播
       if (overflow) {
@@ -250,10 +267,10 @@ export function createGameController(store: Store<GameState>): GameController {
     },
 
     rejectSakee() {
-      // 平时小猴猫主动连 Mulasakee → 他不接（最后一天他才主动来，见 progression.sakeeShowsUp）
+      // 平时小猴猫主动连神秘来电 → 对方不接（最后一天才揭示身份，见 progression.sakeeShowsUp）
       store.setState({
         ...get(),
-        flash: { text: 'Mulasakee 瞥了一眼你发去的连麦邀请，没接。\n「……时候未到。」' },
+        flash: { text: `连麦请求发过去了——对面没接。\n「${sakeeRejectLine()}」` },
       });
     },
 
@@ -306,6 +323,7 @@ export function createGameController(store: Store<GameState>): GameController {
         battle,
         girl,
       );
+      // Mulasakee 赢后回 Hub，玩家点「结束直播」再由 endDay() 触发 endSeason（最后一天）
       store.setState({ ...settled, phase: 'DAY_HUB' });
     },
 
@@ -338,6 +356,24 @@ export function createGameController(store: Store<GameState>): GameController {
 
     clearFlash() {
       store.setState({ ...get(), flash: null });
+    },
+
+    clearWhaleResult() {
+      store.setState({ ...get(), pendingWhaleResult: null });
+    },
+
+    restartDay() {
+      const snap = get().dayStartSnapshot;
+      if (!snap) return;
+      // 恢复快照，但保留快照引用本身，让玩家可以多次重来。
+      // flash 覆盖快照里可能残留的昨日 flavor → 复用 Toast，与 flavor 消息同款表现。
+      // dayRestarted：本天收工不再掷 flavor（pickEvent 守卫）。
+      store.setState({
+        ...structuredClone(snap),
+        dayStartSnapshot: snap,
+        dayRestarted: true,
+        flash: { text: '今天的进度已重置。' },
+      });
     },
 
     clearMulasakeeComment() {

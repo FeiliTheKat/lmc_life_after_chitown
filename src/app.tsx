@@ -8,6 +8,7 @@ import { HubScreen } from './ui/HubScreen';
 import { BattleScreen } from './ui/BattleScreen';
 import { EndingScreen } from './ui/EndingScreen';
 import { EventModal } from './ui/EventModal';
+import { WhaleEventModal, WhaleResultModal } from './ui/WhaleEventModal';
 import { Typewriter } from './ui/Typewriter';
 import type { GameState } from '@/types';
 
@@ -17,7 +18,7 @@ function Toast({ flash }: { flash: GameState['flash'] }) {
     if (!flash) return;
     // 给打字机留足吐字时间：按字数估算（cps≈40）+ 阅读余量，再自动收起。
     const typeMs = flash.text.length * 28;
-    const t = setTimeout(() => controller.clearFlash(), Math.max(flash.img ? 4500 : 3200, typeMs + 1600));
+    const t = setTimeout(() => controller.clearFlash(), Math.max(flash.img ? 4500 : 4200, typeMs + 1600));
     return () => clearTimeout(t);
   }, [flash]);
 
@@ -52,10 +53,20 @@ export function App() {
     <>
       {screen}
       {state.pendingEvent && (
-        <EventModal
-          event={state.pendingEvent}
-          rhetoricLvl={state.stats.rhetoricLvl}
-          controller={controller}
+        state.pendingEvent.kind === 'whale' ? (
+          <WhaleEventModal event={state.pendingEvent} controller={controller} />
+        ) : (
+          <EventModal
+            event={state.pendingEvent}
+            rhetoricLvl={state.stats.rhetoricLvl}
+            controller={controller}
+          />
+        )
+      )}
+      {state.pendingWhaleResult && (
+        <WhaleResultModal
+          result={state.pendingWhaleResult}
+          onClose={() => controller.clearWhaleResult()}
         />
       )}
       <Toast flash={state.flash} />

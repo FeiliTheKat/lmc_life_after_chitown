@@ -13,13 +13,15 @@ import { girlDef, ALL_GIRL_IDS } from '@/content/monkeyGirls.data';
 import type { GameState } from '@/types';
 
 describe('tier 门控（§6 tierGate / PRD 2.5）', () => {
+  // 难度调参 2026-06-15：门槛随放缓后的粉丝曲线压缩重排（见 balance.tierGate）。
   it('粉丝里程碑边界正确解锁档位', () => {
-    expect(fansGateTiers(90000)).toEqual([]); // 开局 9.0 万，未达 9.1 万门槛
-    expect(fansGateTiers(91000)).toEqual([1]); // 9.1 万解锁 tier1
-    expect(fansGateTiers(91999)).toEqual([1]);
-    expect(fansGateTiers(92000)).toEqual([1, 2]);
-    expect(fansGateTiers(95000)).toEqual([1, 2, 3]);
-    expect(fansGateTiers(98000)).toEqual([1, 2, 3, 4]);
+    expect(fansGateTiers(84999)).toEqual([]); // 低于 8.5 万下限 → 无可挑战
+    expect(fansGateTiers(85000)).toEqual([1]); // 开局(9万)即在 tier1 区间内
+    expect(fansGateTiers(90000)).toEqual([1]);
+    expect(fansGateTiers(90999)).toEqual([1]);
+    expect(fansGateTiers(91000)).toEqual([1, 2]); // ~9.1 万解锁 tier2
+    expect(fansGateTiers(92500)).toEqual([1, 2, 3]); // ~9.25 万解锁 tier3
+    expect(fansGateTiers(94000)).toEqual([1, 2, 3, 4]); // ~9.4 万解锁 tier4
     expect(fansGateTiers(100000)).toEqual([1, 2, 3, 4]); // 上限落最后档
   });
 });
@@ -38,6 +40,32 @@ describe('canChallenge（§5.1 / §7.5）', () => {
     expect(canChallenge(girl, game)).toBe(false);
     game.girls[girl.id].status = 'churned';
     expect(canChallenge(girl, game)).toBe(false);
+  });
+
+  // 回归（死锁 bug 2026-06-15）：上一档有人流失(churned)时，更高 tier 仍须能解锁。
+  // 流失的对手不可再 PK，故解锁条件须按"已了结"而非"全部签下"判定，否则永久锁死后续 tier。
+  it('上一档有人流失时，更高 tier 仍能解锁（不被死锁）', () => {
+    const tier2Ids = ALL_GIRL_IDS.filter((id) => {
+      const d = girlDef(id);
+      return !d.isHidden && d.tier === 2;
+    });
+    const tier3 = ALL_GIRL_IDS.map(girlDef).find((d) => !d.isHidden && d.tier === 3)!;
+    // 注册全部 tier2 + 目标 tier3，粉丝够解锁 tier3
+    const game = createInitialGameState({
+      seed: 1,
+      girlIds: [...tier2Ids, tier3.id],
+      totalDays: 18,
+    });
+    game.resources.fans = 92500;
+    // tier2：除最后一个流失外全部签下
+    tier2Ids.forEach((id, i) => {
+      game.girls[id].status = i === tier2Ids.length - 1 ? 'churned' : 'signed';
+    });
+    expect(canChallenge(tier3, game)).toBe(true);
+
+    // 反向：只要还有一个 tier2 未了结(unmet)，tier3 仍被门控锁住
+    game.girls[tier2Ids[0]].status = 'unmet';
+    expect(canChallenge(tier3, game)).toBe(false);
   });
 
 });

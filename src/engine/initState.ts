@@ -48,6 +48,8 @@ export function createInitialGameState(opts: NewGameOptions = {}): GameState {
     girls,
     flags: {},
     flash: null,
+    pendingWhaleResult: null,
+    dayStartSnapshot: null,
     eventLog: [],
     pendingEvent: null,
     battle: null,

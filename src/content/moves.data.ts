@@ -24,7 +24,7 @@ export const MOVES: Record<MoveKey, MoveDef> = {
   },
   singHero: {
     key: 'singHero',
-    label: '唱歌·英雄',
+    label: '公式英雄',
     category: '才艺',
     costEnergy: cost.singHero,
     canEnlighten: true, // 仅此招对放敌人歌目标触发感化 ×2
@@ -37,7 +37,7 @@ export const MOVES: Record<MoveKey, MoveDef> = {
   },
   looks: {
     key: 'looks',
-    label: '颜值反问',
+    label: '颜值征服',
     category: '颜值',
     costEnergy: cost.looks,
   },

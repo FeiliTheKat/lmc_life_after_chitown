@@ -6,7 +6,7 @@
  */
 import type { DialogueLine } from '@/types';
 
-export type HubTrigger = 'variety' | 'listen' | 'cereal' | 'asenStyle' | 'startBattle';
+export type HubTrigger = 'variety' | 'listen' | 'cereal' | 'asenStyle' | 'startBattle' | 'reject';
 export type BattleTrigger = 'singHero' | 'rhetoric' | 'money' | 'looks' | 'cashDance' | 'flee';
 
 const HUB: Record<HubTrigger, string[]> = {
@@ -42,6 +42,12 @@ const HUB: Record<HubTrigger, string[]> = {
     '既已连麦，此乃正事，勿复迟疑。',
     '……去罢，孤观汝能支几回。',
   ],
+
+  reject: [
+    '孤旁观已久。连麦之时，孤自定夺，非汝所能催。',
+    '凡事有时，此亦然。将该做之事做完，再来。',
+    '孤自有主张。今日，无意。',
+  ],
 };
 
 const BATTLE: Record<BattleTrigger, string[]> = {
@@ -59,18 +65,9 @@ const BATTLE: Record<BattleTrigger, string[]> = {
     '……言虽善，终须看汝能否久持。',
   ],
 
-  money: [
-    '以礼物压人，此即汝之道乎？',
-    '金帛既出，人心可复得乎？',
-    '礼物纷至，金银终非全无所用，孤姑且认之。',
-    '……土鸡蛋之术，汝亦习得矣。',
-  ],
+  money: ['金帛既出，人心可复得乎？', '……土鸡蛋之术，汝亦习得矣。'],
 
-  looks: [
-    '以容貌反制，倒也合汝之路数。',
-    '……略有可观，至少知己之长。',
-    '借颜面开局，此道未必不可。',
-  ],
+  looks: ['借颜面开局，此道未必不可。'],
 
   cashDance: [
     '跳抓钱舞乎？此举当真耶？',
@@ -78,12 +75,7 @@ const BATTLE: Record<BattleTrigger, string[]> = {
     '……观汝对“才艺”二字，自有异解。',
   ],
 
-  flee: [
-    '遁矣？孤早知如此。',
-    '认败而退，尚称诚实，胜于强撑。',
-    '……不能支，则不能支。后日勿复轻战。',
-    '既下播而认负，此局且罢，来日再议。',
-  ],
+  flee: ['遁矣？孤早知如此。', '认败而退，尚称诚实，胜于强撑。'],
 };
 
 let _uid = 0;
@@ -100,6 +92,10 @@ function pick(arr: string[]): string {
 
 export function sakeeHubComment(trigger: HubTrigger): SakeeComment {
   return { text: pick(HUB[trigger]), context: 'hub', uid: ++_uid };
+}
+
+export function sakeeRejectLine(): string {
+  return pick(HUB.reject);
 }
 
 export function sakeeBattleComment(trigger: BattleTrigger): SakeeComment {

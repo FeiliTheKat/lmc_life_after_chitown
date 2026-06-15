@@ -70,6 +70,15 @@ describe('§5.8 配速回归护栏（新循环）', () => {
     expect(end.win.result).toBe('LOSE_INCOMPLETE'); // 光涨粉不收服 → 三条件不全
   });
 
+  // 难度护栏（2026-06-15）：单靠看综艺/听歌、整季不收服一个猴女郎，**绝不可能破十万**。
+  // 破十万的主引擎是收服后宫的被动产出（后半季滚雪球），逼玩家在最后几天才压线达标。
+  // 上界守"不能光刷综艺通关"，下界守"别把刷综艺彻底削废、配速失真"。
+  it('纯刷综艺（零收服）整季攒不到十万——逼玩家走收服线', () => {
+    const end = playDisciplinedSeason(42);
+    expect(end.resources.fans).toBeLessThan(balance.resources.fansGoal); // 上界：刷不出十万
+    expect(end.resources.fans).toBeGreaterThan(94000); // 下界：仍climb到高位（差临门一脚）
+  });
+
   it('无脑刷综艺则触发强制停播（压力是跨天节流阀，§7.6）', () => {
     const store = createStore(newGame(1));
     const ctrl = createGameController(store);

@@ -17,7 +17,10 @@ function freshGame(): GameState {
 }
 
 const loaded = loadGame();
-if (loaded) loaded.flash = null; // 瞬时 toast 不跨刷新
+if (loaded) {
+  loaded.flash = null; // 瞬时 toast 不跨刷新
+  loaded.pendingWhaleResult = null; // 鲸鱼结果弹窗不跨刷新
+}
 export const store = createStore<GameState>(loaded ?? freshGame());
 export const controller = createGameController(store);
 

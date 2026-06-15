@@ -13,29 +13,37 @@ import { CHURN_TARGET, type GameEvent } from '@/types';
 
 // ───────────────────────── flavor · 碎片涌现叙事（纯叙事，无数值） ─────────────────────────
 
-const FLAVOR: GameEvent[] = [
+const _FLAVOR_RAW = [
   {
     id: 'flavor_danmu_freestyle',
-    kind: 'flavor',
-    trigger: { chance: 0.35 },
+    kind: 'flavor' as const,
     weight: 1,
-    text: ' 【视频推荐：】【深度】科比真的是强奸犯吗？那句著名的“沙克也干了”，究竟藏着什么秘密？',
+    text: ' 【猴结晶转发了视频】：【深度】科比真的是强奸犯吗？那句著名的”沙克也干了”，究竟藏着什么秘密？',
+  },
+  {
+    id: 'flavor_danmu_freestyle2',
+    kind: 'flavor' as const,
+    weight: 1,
+    text: ' 【猴圣地分享了直播】：这个绝对爆，找个挂件，进来直接开胸炮 ',
   },
   {
     id: 'flavor_carti_bro',
-    kind: 'flavor',
-    trigger: { chance: 0.3 },
+    kind: 'flavor' as const,
     weight: 1,
-    text: ' “新的未读消息：黄九日: 小猴猫，听说你回国了？送你票，来广州看我的演出，我想和你聊聊说唱。” ',
+    text: '【新的私信消息】：黄九日: 小猴猫，听说你回国了？送你票，来广州看我的演出，我想和你聊聊说唱。 ',
   },
   {
     id: 'flavor_okun_video',
-    kind: 'flavor',
-    trigger: { chance: 0.25 },
+    kind: 'flavor' as const,
     weight: 1,
-    text: ' “ 新的未读消息：O坤哥发来祝福: 小猴猫，我祝你星途璀璨。” ',
+    text: '【新的未读消息】：O坤哥发来祝福: 小猴猫，我祝你星途璀璨。',
   },
 ];
+
+const FLAVOR: GameEvent[] = _FLAVOR_RAW.map((e) => ({
+  ...e,
+  trigger: { chance: 1 / _FLAVOR_RAW.length },
+}));
 
 // ───────────────────────── churn · 常规流失（公平可避，§7.4） ─────────────────────────
 
