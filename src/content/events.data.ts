@@ -9,7 +9,9 @@
  * 占位符：churn 模板的目标用 `{girl}`（文案）+ `CHURN_TARGET`（outcome.churnGirlId），
  * bind 时替换为随机选中的已收服猴女郎。
  */
+import { balance } from '@/config/balance.config';
 import { CHURN_TARGET, type GameEvent } from '@/types';
+import { RIVAL_AIDE_ID } from '@/content/monkeyGirls.data';
 
 // ───────────────────────── flavor · 碎片涌现叙事（纯叙事，无数值） ─────────────────────────
 
@@ -124,6 +126,49 @@ const WHALE: GameEvent[] = [
 // 平时连不上他，只有赛季最后一天满足条件（粉丝十万 + 收服满10 + 阵容完整）他才主动空降。
 // 见 girls/mulasakee.md 定稿 / systems/progression.ts。
 
+// ───────────────────────── rival · 死对头艾德连线挑战（接受/拒绝） ─────────────────────────
+// 前置：思小捌 + 豆包妹都已收服。**天开始时**（下播后第二天回满精力）发来邀请——不走收工事件
+// 调度器（不进 ALL_EVENTS），由 gameLoop 进天后 events.maybeRivalChallenge 掷出、resolveEvent
+// 特判结算（拒绝不进天）。接受 → 当场进艾德对战（enterRivalBattle，满精力，脚本化必胜）；
+// 拒绝 → 不置旗，改日再约（chance 复触发，直到接受）。接受后 forbidFlags 关掉本事件。
+// flag 一览：aideAccepted（已接受，关闭挑战）/ aideBeaten（已了结，applyBattleResult 置）/
+//           knowsSingHero（习得公式英雄）。
+export const RIVAL_AIDE_CHALLENGE: GameEvent = {
+  id: 'rival_aide_challenge',
+  kind: 'rival',
+  trigger: {
+    requireSignedGirls: ['girl_sixiaoba', 'girl_doubao'],
+    forbidFlags: ['aideAccepted', 'aideBeaten'],
+    chance: balance.rival.challengeChance,
+  },
+  oneShot: false, // 拒绝可改日再触发；接受后由 forbidFlags['aideAccepted'] 关闭
+  text: '艾德向你发来直播连线挑战。',
+  choices: [
+    {
+      text: '接受连线挑战',
+      // 当场开打：enterRivalBattle 让 gameLoop.resolveEvent 不进天、直接进艾德对战。
+      outcome: { setFlags: { aideAccepted: true }, enterRivalBattle: RIVAL_AIDE_ID },
+    },
+    {
+      text: '拒绝',
+      outcome: { text: '艾德：行吧，等你以后有时间再打' },
+    },
+  ],
+};
+
+/**
+ * 吉奥雷送跑车救场内容（艾德对战中精力≤rescueAt 时弹出）。
+ * 不进 ALL_EVENTS——它由战斗子循环（gameLoop.battleTurn）触发、acceptRivalRescue 结算，
+ * 不走收工事件调度器。这里只放展示文案（占位 TBD-作者）。
+ */
+export const AIDE_RESCUE_CONTENT = {
+  rivalId: RIVAL_AIDE_ID,
+  text: '吉奥雷突然给小猴猫刷了一辆跑车！',
+  confirmLabel: '收下跑车',
+  img: undefined as string | undefined,
+};
+
+// 注：RIVAL_AIDE_CHALLENGE 不进 ALL_EVENTS——它是"天开始时"的插入事件，由 gameLoop 单独掷出。
 export const ALL_EVENTS: GameEvent[] = [...WHALE, ...CHURN, ...FLAVOR];
 
 export const EVENTS_BY_ID: Record<string, GameEvent> = Object.fromEntries(

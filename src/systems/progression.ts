@@ -60,6 +60,8 @@ function prevTierResolved(tier: number, game: GameState): boolean {
 export function canChallenge(girl: MonkeyGirlDef, game: GameState): boolean {
   const rt = game.girls[girl.id];
   if (rt && rt.status !== 'unmet') return false; // 已收服/已流失，不再 PK
+  // 注：幼师 requiredMove='singHero'，习得前照常可挑战——故意让玩家打一场收不掉、看到「公式英雄」
+  // 按钮标"需击败艾德"，从而悟出"得先打艾德学《英雄》才能收幼师"（作者定 2026-06-17）。
   // 隐藏第 11（Mulasakee）：不靠粉丝门控，只在最后一天满足空降条件时由他主动出现（§7.5）
   if (girl.isHidden) return sakeeShowsUp(game);
   if (!fansGateTiers(game.resources.fans).includes(girl.tier)) return false;

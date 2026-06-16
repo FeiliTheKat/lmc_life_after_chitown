@@ -83,18 +83,14 @@ function PlayerStatus({ s }: { s: GameState }) {
         <StatCell
           label="金钱"
           value={`¥${r.money}`}
-          tip={
-            `赚：看综艺 +${balance.actions.variety.money} / 听歌 +${balance.actions.listen.money} / 大秀打赏 + 已收服猴女郎被动产出。\n花：买麦片 −${Math.abs(balance.actions.cereal.moneyBase)} / 剪 ASEN 造型 −${balance.asenStyle.cost} / 金钱攻略刷礼物。`
-          }
+          tip={`赚：看综艺 +${balance.actions.variety.money} / 听歌 +${balance.actions.listen.money} / 大秀打赏 + 已收服猴女郎被动产出。\n花：买麦片 −${Math.abs(balance.actions.cereal.moneyBase)} / 剪 ASEN 造型 −${balance.asenStyle.cost} / 金钱攻略刷礼物。`}
         />
         <StatCell
           label="粉丝"
           value={r.fans}
           sub={`/${balance.resources.fansGoal}`}
           tone="fans"
-          tip={
-            `涨：看综艺 +${balance.actions.variety.fans} / 听歌 +${balance.actions.listen.fans} / 大秀赢 +${balance.battle.winFans} + 被动产出。\n掉：大秀输或认输 ${balance.battle.loseFans} / 流失事件。目标 9 万→10 万。`
-          }
+          tip={`涨：看综艺 +${balance.actions.variety.fans} / 听歌 +${balance.actions.listen.fans} / 大秀赢 +${balance.battle.winFans} + 被动产出。\n掉：大秀输或认输 ${balance.battle.loseFans} / 流失事件。目标 9 万→10 万。`}
         />
         <StatCell
           label="压力"
@@ -124,7 +120,7 @@ function PlayerStatus({ s }: { s: GameState }) {
         <StatCell
           label="颜值"
           value={looks}
-          tip={'基础 60；剪 ASEN 造型拉满 100。颜值反问攻略（对颜控女主播）靠它。'}
+          tip={'基础 60；剪 ASEN 造型拉满 100。颜值反问攻略（对颜控主播）靠它。'}
         />
       </div>
     </section>
@@ -270,7 +266,7 @@ export function HubScreen({
           </section>
 
           <section class="panel">
-            <h2>大秀 · 可挑战的女主播</h2>
+            <h2>大秀 · 可挑战的主播</h2>
             {challengeable.length === 0 && !sakeeListed ? (
               <p class="dim">当前粉丝段没有可挑战对象（涨粉解锁更高 tier）。</p>
             ) : (

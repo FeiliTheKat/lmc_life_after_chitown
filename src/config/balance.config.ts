@@ -100,6 +100,15 @@ export const balance = {
   },
   churn: { poolSizeMin: 1, poolSizeMax: 2, minDay: 15 }, // 常规流失 1-2 个，赛季中后期起（PRD 4.6a）
 
+  // 死对头艾德对战（脚本化 Boss）：阈值不可达（怎么打都收不掉），靠高反击快速磨精力；
+  // 精力≤rescueAt 时必然触发吉奥雷送跑车救场 → 强判 WIN、习得 singHero。全部 TBD 待试玩调参。
+  rival: {
+    threshold: 999999, // 攻陷阈值不可达：唯一了结靠救场脚本
+    counterPower: 18, // 每回合反击（磨精力，让"打一会儿"后必然见底）
+    rescueAt: 25, // 精力≤此值 → 触发吉奥雷救场（>0，确保救场先于精力归零）
+    challengeChance: 0.6, // 满足前置（思小捌+豆包妹已收服）后，每次收工掷出连线挑战的概率
+  },
+
   // 赛季日历
   calendar: {
     startDate: '2026-06-16',

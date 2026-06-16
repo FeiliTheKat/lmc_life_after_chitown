@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { playBgm } from '@/engine/bgm';
 import { MOVES, MOVE_KEYS } from '@/content/moves.data';
-import { canUseMove, talentUnlocked, chatBeatsRemaining } from '@/systems/battleEngine';
+import { canUseMove, talentUnlocked, chatBeatsRemaining, counterPowerFor } from '@/systems/battleEngine';
 import { girlDef } from '@/content/monkeyGirls.data';
 import { MONKEY_PORTRAITS } from '@/content/monkey.data';
 import { pic } from '@/content/assets';
@@ -138,8 +138,11 @@ function SakeeQuestions({
   girlName: string;
   onConfirm: () => void;
 }) {
-  const HOLD = 5000; // 每句停留时长（作者指定 5 秒）
+  const HOLD = 5000; // 正式 21 问每句停留时长（作者指定 5 秒）
   const FADE = 600; // 淡入/淡出时长
+  // 铺垫段（lines=dialogue.slice(1) 后的前 4 句：认输/旁观十八日/孤今有数问/等"愿意"旁白）减半停留，
+  // 让玩家更快进入正式问句；问句与结尾旁白保持 HOLD（作者定 2026-06-17）。
+  const LEADIN_LINES = 4;
   const [i, setI] = useState(0);
   const [shown, setShown] = useState(false);
   const done = i >= lines.length;
@@ -150,10 +153,11 @@ function SakeeQuestions({
 
   useEffect(() => {
     if (done) return;
+    const hold = i < LEADIN_LINES ? HOLD / 2 : HOLD; // 铺垫段减半
     setShown(false);
     const tIn = setTimeout(() => setShown(true), 40); // 淡入
-    const tOut = setTimeout(() => setShown(false), 40 + FADE + HOLD); // 淡出
-    const tNext = setTimeout(() => setI((n) => n + 1), 40 + FADE + HOLD + FADE); // 下一句
+    const tOut = setTimeout(() => setShown(false), 40 + FADE + hold); // 淡出
+    const tNext = setTimeout(() => setI((n) => n + 1), 40 + FADE + hold + FADE); // 下一句
     return () => {
       clearTimeout(tIn);
       clearTimeout(tOut);
@@ -199,7 +203,9 @@ function DualPortrait({ state }: { state: GameState }) {
     setPickedIdx(Math.floor(Math.random() * portraits.length));
   }, [b.display.monkeyScene, portraits.length]);
 
-  const monkeySrc = pic(portraits[pickedIdx]);
+  // 剧本 Boss 的小猴猫立绘按场景覆盖（如艾德：对战痞帅、战胜跑车图）；否则走全局随机池
+  const monkeyOverride = girl.monkeyPortraits?.[b.display.monkeyScene];
+  const monkeySrc = pic(monkeyOverride ?? portraits[pickedIdx]);
   const girlEntry = girlSceneEntry(girl, b.display.girlScene);
   const girlSrc = girlEntry ? pic(girlEntry.src) : undefined;
   return (
@@ -238,6 +244,7 @@ export function BattleScreen({
   const pct = Math.min(100, Math.round((b.captureProgress / b.threshold) * 100));
   const energyMax = balance.resources.energyMax;
   const energyPct = Math.min(100, Math.round((state.resources.energy / energyMax) * 100));
+  const counter = counterPowerFor(girl); // 对方每回合反击，并入出招消耗显示
   const [sakeeIntroSeen, setSakeeIntroSeen] = useState(false);
 
   return (
@@ -286,20 +293,31 @@ export function BattleScreen({
         </p>
       )}
 
+      {/* 出招消耗 = 自身成本 + 对方每回合反击，合并显示让总精力消耗更直观（作者定 2026-06-17） */}
+      {!b.result && (
+        <p class="counter-hint">每回合对方会反击 −{counter} 精力，已并入下方各招的精力消耗</p>
+      )}
+
       <div class="btn-row wrap moves">
         {MOVE_KEYS.map((k) => {
           const m = MOVES[k];
           const chatLocked = (m.category === '才艺' || m.category === '颜值') && !talentUnlocked(girl, b);
+          // 公式英雄须先击败艾德习得（canUseMove 已禁用，这里只补 UI 提示）
+          const heroLocked = k === 'singHero' && state.flags.knowsSingHero !== true;
           return (
             <button
               key={k}
-              class={chatLocked ? 'chat-locked' : undefined}
+              class={chatLocked || heroLocked ? 'chat-locked' : undefined}
               disabled={!!b.result || !canUseMove(m, state) || chatLocked}
               onClick={() => controller.battleTurn(k)}
             >
               {m.label}
               <small>
-                {chatLocked ? '需先聊完话术' : `精力-${m.costEnergy}${m.costMoneyPerUse ? `·¥${m.costMoneyPerUse}` : ''}`}
+                {heroLocked
+                  ? '未习得·需击败艾德'
+                  : chatLocked
+                    ? '需先聊完话术'
+                    : `精力-${m.costEnergy + counter}${m.costMoneyPerUse ? `·¥${m.costMoneyPerUse}` : ''}`}
               </small>
             </button>
           );
@@ -333,6 +351,14 @@ export function BattleScreen({
               onConfirm={() => controller.confirmCapture()}
             />
           )
+        ) : girl.isRival ? (
+          // 死对头艾德：击败≠收服，结尾是"学会了公式英雄"
+          <div class="overlay">
+            <h2 class="win">学会了《英雄》！</h2>
+            <button class="primary" onClick={() => controller.confirmCapture()}>
+              结束连线
+            </button>
+          </div>
         ) : (
           <div class="overlay">
             <h2 class="win">拿下了！</h2>

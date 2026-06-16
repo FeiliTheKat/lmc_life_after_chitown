@@ -20,17 +20,20 @@ export function makeGirl(overrides: Partial<MonkeyGirlDef> = {}): MonkeyGirlDef 
   };
 }
 
-/** 造 GameState，并为传入的 girls 注册 unmet 运行时槽。可覆盖 resources/stats。 */
+/** 造 GameState，并为传入的 girls 注册 unmet 运行时槽。可覆盖 resources/stats/flags。
+ *  默认 knowsSingHero=true（测试默认为"已习得公式英雄"的中期态）；测 singHero 习得门控时传 flags 覆盖。 */
 export function makeGame(
   opts: NewGameOptions & {
     girls?: MonkeyGirlDef[];
     resources?: Partial<GameState['resources']>;
     stats?: Partial<GameState['stats']>;
+    flags?: Record<string, boolean | number>;
   } = {},
 ): GameState {
-  const { girls = [], resources, stats, ...rest } = opts;
+  const { girls = [], resources, stats, flags, ...rest } = opts;
   const game = createInitialGameState({ seed: 1, girlIds: girls.map((g) => g.id), ...rest });
   if (resources) Object.assign(game.resources, resources);
   if (stats) Object.assign(game.stats, stats);
+  game.flags = { knowsSingHero: true, ...flags };
   return game;
 }

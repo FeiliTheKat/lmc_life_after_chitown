@@ -10,7 +10,34 @@ import { EndingScreen } from './ui/EndingScreen';
 import { EventModal } from './ui/EventModal';
 import { WhaleEventModal, WhaleResultModal } from './ui/WhaleEventModal';
 import { Typewriter } from './ui/Typewriter';
+import { AIDE_RESCUE_CONTENT } from '@/content/events.data';
 import type { GameState } from '@/types';
+
+/** 吉奥雷送跑车救场弹窗（艾德对战中精力快耗尽时叠加在 BattleScreen 上）。确认 → 强判 WIN。 */
+function RivalRescueModal() {
+  const c = AIDE_RESCUE_CONTENT;
+  const img = c.img ? pic(c.img) : undefined;
+  return (
+    <div class="modal-backdrop whale-backdrop">
+      <div class="whale-modal">
+        <span class="whale-kind-tag">救场</span>
+        <div class="whale-body">
+          {img && (
+            <figure class="whale-portrait">
+              <img src={img} alt="" />
+            </figure>
+          )}
+          <p class="whale-text">{c.text}</p>
+        </div>
+        <div class="btn-col whale-actions">
+          <button class="primary whale-confirm" onClick={() => controller.acceptRivalRescue()}>
+            {c.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /** 行动反馈对话框：逐字蹦出（打字机），自动消失，可带图（如 ASEN 造型）。 */
 function Toast({ flash }: { flash: GameState['flash'] }) {
@@ -69,6 +96,7 @@ export function App() {
           onClose={() => controller.clearWhaleResult()}
         />
       )}
+      {state.pendingRivalRescue && <RivalRescueModal />}
       <Toast flash={state.flash} />
     </>
   );

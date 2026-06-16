@@ -8,6 +8,7 @@ const KIND_LABEL: Record<GameEvent['kind'], string> = {
   churn: '猴女郎私信',
   whale: '意外',
   hidden: '空降',
+  rival: '连线挑战',
 };
 
 /**

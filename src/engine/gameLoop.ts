@@ -14,7 +14,7 @@ import {
   applyBattleResult,
 } from '@/systems/battleEngine';
 import { evalWinConditions, isVictory } from '@/systems/progression';
-import { pickEvent, applyEventOutcome } from '@/systems/events';
+import { pickEvent, applyEventOutcome, maybeRivalChallenge } from '@/systems/events';
 import { girlDef } from '@/content/monkeyGirls.data';
 import { moveReactionLines } from '@/content/moveReactions';
 import { randomAlbum, type AlbumDef } from '@/content/songs.data';
@@ -31,6 +31,7 @@ export function passivePayout(game: GameState): { money: number; fans: number } 
     if (rt.status !== 'signed') continue;
     const def = girlDef(rt.id);
     if (def.isHidden) continue; // 神秘嘉宾（Mulasakee）赢下≠收服，不产出后宫收益
+    if (def.isRival) continue; // 死对头艾德赢下≠收服，不进后宫产出（习得 singHero 而已）
     if (def.isWhale) {
       if ((rt.daysSinceSigned ?? 0) < balance.whale.activeDays) {
         money += balance.whale.payout.moneyPerDay;
@@ -190,6 +191,8 @@ export interface GameController {
   confirmCapture(): void;
   /** 玩家主动下播/认输 = 立即判负，吃与精力耗尽同样的 LOSE 惩罚（作者已定，2026-06-13）。 */
   fleeBattle(): void;
+  /** 吉奥雷送跑车救场弹窗确认：把当前艾德对战强判为 WIN（走收服前对话弹窗 → confirmCapture 习得 singHero）。 */
+  acceptRivalRescue(): void;
   /** 剪 ASEN 造型：花 ¥1500 把颜值拉满 100（design §5.4），一次性、不消耗当天。 */
   buyAsenStyle(): void;
   /** 清掉行动反馈 toast。 */
@@ -246,22 +249,47 @@ export function createGameController(store: Store<GameState>): GameController {
         store.setState({ ...g0, pendingEvent: picked });
         return;
       }
-      // 无事件 / 无选项叙事事件：即时结算（写 eventLog/flash），随即进天。
+      // 无事件 / 无选项叙事事件：即时结算（写 eventLog/flash），随即进天；进天后掷艾德连线挑战。
       const settled = picked ? applyEventOutcome(g0, picked, 0) : g0;
-      store.setState(runForcedRest(afterAction(settled)));
+      store.setState(maybeRivalChallenge(runForcedRest(afterAction(settled))));
     },
 
     resolveEvent(choiceIndex) {
       const g0 = get();
       if (!g0.pendingEvent) return;
-      const settled = applyEventOutcome(g0, g0.pendingEvent, choiceIndex);
+      const ev = g0.pendingEvent;
+      const outcome = ev.choices?.[choiceIndex]?.outcome;
+      const settled = applyEventOutcome(g0, ev, choiceIndex);
       settled.pendingEvent = null;
-      // 事件结算后接着进天（pendingEvent 只在收工掷出，故必随之进天，§7.1）。
-      store.setState(runForcedRest(afterAction(settled)));
+
+      // 死对头连线挑战是"天开始时"的插入事件 —— 不推进天，玩家结算完仍在当天（满精力可玩）。
+      if (ev.kind === 'rival') {
+        if (outcome?.enterRivalBattle) {
+          // 接受：当场开打，用当天满精力进艾德对战。
+          const rivalId = outcome.enterRivalBattle;
+          // 防御：老存档可能没给艾德注册运行时槽 → 补一个，避免进对战读 girls[id] 崩。
+          const g = settled.girls[rivalId]
+            ? settled
+            : { ...settled, girls: { ...settled.girls, [rivalId]: { id: rivalId, status: 'unmet' as const, attempts: 0, revealedWeakness: [] } } };
+          const battle = enterBattle(g, girlDef(rivalId));
+          store.setState({ ...g, phase: 'BATTLE', battle, flash: null });
+        } else {
+          // 拒绝：回 Hub 继续当天（flash 由 applyEventOutcome 设好），不进天。
+          store.setState({ ...settled, phase: 'DAY_HUB' });
+        }
+        return;
+      }
+
+      // 其余（收工）事件结算后接着进天；进天后掷艾德连线挑战。
+      store.setState(maybeRivalChallenge(runForcedRest(afterAction(settled))));
     },
 
     startBattle(girlId) {
-      const g = get();
+      const g0 = get();
+      // 防御：老存档可能没给新对手（如艾德）注册运行时槽 → 进对战前补一个，避免读 girls[id] 崩。
+      const g = g0.girls[girlId]
+        ? g0
+        : { ...g0, girls: { ...g0.girls, [girlId]: { id: girlId, status: 'unmet' as const, attempts: 0, revealedWeakness: [] } } };
       const battle = enterBattle(g, girlDef(girlId));
       store.setState({ ...g, phase: 'BATTLE', battle, mulasakeeComment: sakeeHubComment('startBattle') });
     },
@@ -307,6 +335,16 @@ export function createGameController(store: Store<GameState>): GameController {
         // 失败：立即结算，保留 finished battle 供结果 overlay
         const settled = applyBattleResult(r.game, r.battle, girl);
         store.setState({ ...settled, phase: 'DAY_HUB', battle: r.battle, mulasakeeComment: comment });
+      } else if (girl.isRival && r.game.resources.energy <= balance.rival.rescueAt) {
+        // 死对头艾德（阈值不可达 + noFail 不会输）：精力快耗尽 → 吉奥雷送跑车救场（必然触发）。
+        // 暂停对战、弹救场弹窗；玩家确认后 acceptRivalRescue 把本场强判为 WIN（习得 singHero）。
+        store.setState({
+          ...r.game,
+          phase: 'BATTLE',
+          battle: r.battle,
+          pendingRivalRescue: { rivalId: girl.id },
+          mulasakeeComment: comment,
+        });
       } else {
         store.setState({ ...r.game, battle: r.battle, phase: 'BATTLE', mulasakeeComment: comment });
       }
@@ -340,6 +378,27 @@ export function createGameController(store: Store<GameState>): GameController {
       };
       const settled = applyBattleResult(g0, battle, girl);
       store.setState({ ...settled, phase: 'DAY_HUB', battle, mulasakeeComment: sakeeBattleComment('flee') });
+    },
+
+    acceptRivalRescue() {
+      const g0 = get();
+      if (!g0.battle || !g0.pendingRivalRescue || g0.battle.result) return;
+      const girl = girlDef(g0.battle.girlId);
+      // 强判 WIN：复用收服前对话弹窗流程，玩家读完 winDialogue 点确认 → confirmCapture →
+      // applyBattleResult 命中 isRival 分支（习得 singHero、置 aideBeaten，不计收服数）。
+      const battle: typeof g0.battle = {
+        ...g0.battle,
+        result: 'win',
+        display: { monkeyScene: 'won', girlScene: 'won' },
+      };
+      const dialogue = girl.winDialogue ?? [{ who: 'narration' as const, text: girl.captureScript }];
+      store.setState({
+        ...g0,
+        pendingRivalRescue: null,
+        phase: 'BATTLE',
+        battle,
+        pendingCaptureDialogue: { girlId: girl.id, dialogue, battle },
+      });
     },
 
     buyAsenStyle() {

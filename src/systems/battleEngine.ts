@@ -68,8 +68,15 @@ export function looksGateFor(girl: MonkeyGirlDef): number {
   return girl.looksGate ?? balance.loveLooksGate;
 }
 
+/** 猴女郎每回合反击强度（§5.2 step9）。UI 把它并进出招的"总精力消耗"显示。 */
+export function counterPowerFor(girl: MonkeyGirlDef): number {
+  return girl.counterPower ?? balance.counter[girl.tier];
+}
+
 /** 出招可用性守卫（§5.2 前置）：精力够本次出招；金钱攻略金钱不足则禁用 */
 export function canUseMove(move: MoveDef, game: GameState): boolean {
+  // 公式英雄（singHero）须先击败艾德才习得：未习得前对任何人都不能用（作者定 2026-06-17）。
+  if (move.key === 'singHero' && game.flags.knowsSingHero !== true) return false;
   if (game.resources.energy < move.costEnergy) return false;
   if (move.costMoneyPerUse && game.resources.money < move.costMoneyPerUse) return false;
   return true;
@@ -235,7 +242,7 @@ export function resolveTurn(
   }
 
   // 9) 猴女郎反击（仅未攻陷时）
-  const counter = girl.counterPower ?? balance.counter[girl.tier];
+  const counter = counterPowerFor(girl);
   game.resources.energy -= counter;
   clampResources(game.resources);
 
@@ -268,7 +275,12 @@ export function applyBattleResult(
   if (battle.result === 'win') {
     rt.status = 'signed';
     rt.daysSinceSigned = 0;
-    if (girl.isHidden) {
+    if (girl.isRival) {
+      // 击败死对头艾德（脚本化必胜）：不计收服数、不进后宫产出（passivePayout 同守 isRival），
+      // 仅习得公式英雄 + 置 aideBeaten（关闭连线挑战 / Hub 按钮）。
+      game.flags.knowsSingHero = true;
+      game.flags.aideBeaten = true;
+    } else if (girl.isHidden) {
       // 赢下神秘嘉宾（Mulasakee）≠收服：不计收服数、不进后宫产出（passivePayout 同守 isHidden），
       // 仅置旗供结局彩蛋（EndingScreen 在 WIN 时据此追加 ASEN《永玄大典》隐藏动态）。
       game.flags.sakeeBeaten = true;

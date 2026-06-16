@@ -250,6 +250,12 @@ button.restart-day {
   color: var(--warn, #e0a44a);
   opacity: 0.95;
 }
+.counter-hint {
+  margin: 0.2rem 0;
+  font-size: 0.8rem;
+  color: var(--muted, #9aa);
+  opacity: 0.85;
+}
 button.chat-locked {
   opacity: 0.45;
   border-style: dashed;

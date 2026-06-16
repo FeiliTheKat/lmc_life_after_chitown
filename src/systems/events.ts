@@ -7,7 +7,7 @@
  */
 import { clampResources } from '@/systems/economy';
 import { makeRng, type Rng } from '@/systems/rng';
-import { ALL_EVENTS } from '@/content/events.data';
+import { ALL_EVENTS, RIVAL_AIDE_CHALLENGE } from '@/content/events.data';
 import { girlDef } from '@/content/monkeyGirls.data';
 import {
   CHURN_TARGET,
@@ -19,7 +19,7 @@ import {
 import { evalWinConditions } from '@/systems/progression';
 
 // 剧本/流失 > 隐藏内容 > flavor（避免关键事件被氛围事件挤掉，§7.1）
-const KIND_PRIORITY: Record<EventKind, number> = { whale: 3, churn: 3, hidden: 2, flavor: 1 };
+const KIND_PRIORITY: Record<EventKind, number> = { whale: 3, churn: 3, rival: 3, hidden: 2, flavor: 1 };
 
 /** oneShot 已触发标记键。 */
 export function firedKey(id: string): string {
@@ -65,6 +65,9 @@ export function triggerMatches(trigger: EventTrigger, game: GameState): boolean 
   if (trigger.requireFlags?.some((f) => game.flags[f] !== true)) return false;
   if (trigger.forbidFlags?.some((f) => game.flags[f] === true)) return false;
   if (trigger.requireSignedGirl && game.girls[trigger.requireSignedGirl]?.status !== 'signed') {
+    return false;
+  }
+  if (trigger.requireSignedGirls?.some((id) => game.girls[id]?.status !== 'signed')) {
     return false;
   }
   if (trigger.requireAllGoalsMet) {
@@ -131,6 +134,22 @@ export function pickEvent(game: GameState): GameEvent | null {
     if (r < 0) return e;
   }
   return flavor[flavor.length - 1] ?? null;
+}
+
+/**
+ * 天开始时（下播后第二天回满精力）掷艾德连线挑战（不走收工调度器）。命中则挂 pendingEvent。
+ * 由 gameLoop 在进天落定后调用；满足前置（思小捌+豆包妹已收服、未接受/未击败）且种子化 chance
+ * 命中才发出邀请。强制停播日 / 已有别的弹窗 / 非 Hub 相位 一律不触发。
+ */
+export function maybeRivalChallenge(prev: GameState): GameState {
+  if (prev.phase !== 'DAY_HUB') return prev;
+  if (prev.pendingEvent) return prev; // 已有事件弹窗，不抢
+  if (prev.calendar.forcedRestDaysLeft > 0) return prev; // 强制停播日不打扰
+  const ev = RIVAL_AIDE_CHALLENGE;
+  if (!triggerMatches(ev.trigger, prev)) return prev;
+  const rng = eventRng(prev, `rival:${prev.calendar.currentDay}`);
+  if (ev.trigger.chance !== undefined && rng() >= ev.trigger.chance) return prev;
+  return { ...prev, pendingEvent: ev };
 }
 
 /** 让某猴女郎永久流失（计入①不回退 signedCount，失被动产出，图鉴标"已流失"）。 */

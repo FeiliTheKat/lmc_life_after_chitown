@@ -63,6 +63,9 @@ export interface MonkeyGirlDef {
   moveReactions?: Partial<Record<MoveKey, DialogueLine[][]>>;
 
   assets: GirlAssets; // 2-3 张场景图（design §10）
+  // 本场对战专属的「小猴猫」立绘覆盖（按场景）：设了则该场景不走全局随机 MONKEY_PORTRAITS。
+  // 用于剧本 Boss（如艾德对战小猴猫用痞帅图、战胜用跑车图）。文件名指向 /pweb。
+  monkeyPortraits?: Partial<Record<SceneKey, string>>;
 
   payout?: { moneyPerDay: number; fansPerDay: number }; // 不写取 tier 默认（PRD 4.5）
 
@@ -80,6 +83,9 @@ export interface MonkeyGirlDef {
   isWhale?: boolean; // 单单（鲸鱼特例，PRD 4.6b）
   inChurnPool?: boolean; // 是否进常规流失随机池（单单不进，PRD 4.6a）
   isHidden?: boolean; // 隐藏第 11（PRD 1.11a，不计入必需 10）
+  // 死对头主播（艾德）：非后宫的剧本 Boss。不计入收服 10、不进图鉴/流失池/被动产出。
+  // 攻陷阈值设为不可达，唯一了结方式是「精力快耗尽 → 吉奥雷送跑车救场」脚本化必胜（见 gameLoop）。
+  isRival?: boolean;
 }
 
 export type GirlStatus = 'unmet' | 'signed' | 'churned';
@@ -133,7 +139,8 @@ export type EventKind =
   | 'flavor' // 碎片涌现叙事（PRD 3.3）
   | 'churn' // 常规流失·公平可避（4.6a）
   | 'whale' // 单单剧本特例（4.6b）
-  | 'hidden'; // 提前达标隐藏内容（1.11a）
+  | 'hidden' // 提前达标隐藏内容（1.11a）
+  | 'rival'; // 死对头主播艾德的连线挑战（接受/拒绝）
 
 export interface EventTrigger {
   minDay?: number;
@@ -141,6 +148,7 @@ export interface EventTrigger {
   requireFlags?: string[]; // 全部为 true 才触发
   forbidFlags?: string[]; // 任一为 true 则不触发
   requireSignedGirl?: string; // 需已收服某猴女郎（流失事件指向具体人）
+  requireSignedGirls?: string[]; // 需"同时"已收服列表里全部猴女郎（如艾德挑战需思小捌+豆包妹都收服）
   requireAllGoalsMet?: boolean; // = capturedTen && fansReached（不含 seasonEnded，design §7.5）
   chance?: number; // 该窗口每次 EVENT_CHECK 触发概率（种子化 RNG）
 }
@@ -154,6 +162,8 @@ export interface EventOutcome {
   setFlags?: Record<string, boolean | number>;
   // 单单专用：纯 5% 留存掷骰（投入不改概率，§7.3）。keep/churn 两段结局文案随掷骰展示。
   whaleRetainRoll?: { keepChance: number; keepText: string; churnText: string };
+  // 死对头连线挑战"接受"专用：设了则结算后不进天，当场进入该死对头的对战（值为其 id）。
+  enterRivalBattle?: string;
   text?: string; // 结果文案                          // TBD-作者
   img?: string; // 结算结果配图（pweb 文件名，随 flash toast 展示）
 }
@@ -259,6 +269,9 @@ export interface GameState {
   } | null;
   flash?: { text: string; img?: string } | null; // 行动反馈 toast（瞬时 UI，加载时清空）
   pendingWhaleResult?: { text: string; img?: string } | null; // 鲸鱼事件结算结果（挽回单单等），在大弹窗里展示
+  // 艾德对战中「精力快耗尽 → 吉奥雷送跑车救场」脚本弹窗。非空时 BattleScreen 上叠加救场弹窗，
+  // 玩家确认即把当前对战强判为 WIN（习得 singHero）。详见 gameLoop.acceptRivalRescue。
+  pendingRivalRescue?: { rivalId: string } | null;
   dayStartSnapshot?: GameState | null; // 当天开始时的快照，用于"重来这一天"
   mulasakeeComment?: { text: string; context: 'hub' | 'battle'; uid: number } | null; // Mulasakee 旁观弹窗（右上角，瞬时）
   eventLog: EventLogEntry[];

@@ -3,6 +3,7 @@
  * M0：思小捌 + 老火姬为真实定稿样本，其余为占位 def（凑门控，素材到了替换）。
  * 文案紧贴 girls/*.md 真迹；图先占位（assets.scenes 空 → UI 用色块占位）。
  */
+import { balance } from '@/config/balance.config';
 import type { MonkeyGirlDef } from '@/types';
 
 // ── 思小捌对话库（introDialogue 与 moveReactions 共享）
@@ -202,12 +203,12 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
       { who: 'girl', text: '我是贵州人，你长得好可爱♥' },
     ],
     captureScript:
-      '〔邀约·canon〕打火姬，有一说一。我们有个猴猫家族，底下有猴猫传媒，你这话术、这范儿，进来就是 top one 猴女郎，有没有感觉？',
+      '〔邀约·canon〕老火姬，有一说一。我们有个猴猫家族，底下有猴猫传媒，你这话术、这范儿，进来就是 top one 猴女郎，有没有感觉？',
     winDialogue: [
       { who: 'narration', text: LAOHUOJI_HOOK },
       {
         who: 'monkey',
-        text: '他们说你长得有点像 Billionhappy，你知道吗？兄弟们，去对面用打火机把名字打出来给她看，真有点像。',
+        text: '他们说你长得有点像 Billionhappy，你知道吗？兄弟们，去对面把名字打出来给她看，真有点像。',
       },
       { who: 'girl', text: '男的？' },
       { who: 'monkey', text: '对，但是他长得有点雌。' },
@@ -1261,8 +1262,91 @@ export const MONKEY_GIRLS: MonkeyGirlDef[] = [
   },
 ];
 
+// ───────────────────────── 死对头主播（非后宫 Boss） ─────────────────────────
+// 艾德：男主播，思小捌+豆包妹都收服后向小猴猫发起连线挑战。脚本化必败→必胜：
+// 阈值不可达、高反击磨精力，精力快耗尽时吉奥雷送跑车救场强判 WIN，并教会小猴猫 singHero。
+// 复用 MonkeyGirlDef 与战斗引擎（同 Mulasakee 的 isHidden 套路），但 isRival 让它不计入
+// 收服 10、不进图鉴/流失池/被动产出。台词/配图全为占位（TBD-作者，等风格参考再定稿）。
+export const RIVALS: MonkeyGirlDef[] = [
+  {
+    id: 'rival_aide',
+    name: '艾德',
+    type: '才艺', // 占位：具体克制口味待定（反正阈值不可达，数值仅决定"打着费不费劲"）
+    // tier 对死对头是装饰字段：艾德不走粉丝 tier 门控，由连线事件（思小捌+豆包妹已收服）触发，
+    // 阈值/反击取自 balance.rival。设 1 仅表"前期 Boss"——他必须先于幼师被击败（幼师需 singHero）。
+    tier: 1,
+    isRival: true,
+    noFail: true, // 不会"打输"：阈值不可达，精力磨到 rescueAt 由 gameLoop 触发救场强判 WIN
+    captureThreshold: balance.rival.threshold,
+    counterPower: balance.rival.counterPower,
+    introDialogue: [
+      { who: 'narration', text: '哇，爆了爆了，小猴猫连上了re圈一哥艾德！' },
+      { who: 'narration', text: '小猴猫心生疑惑：明明艾德已经把自己拉白了，怎么会主动前来连麦？' },
+      {
+        who: 'girl',
+        text: '一想到要跟你连麦，我就有点近乡情更怯啊，要接近一个不敢触碰之人，我也是鼓足了十分的勇气。',
+      },
+      { who: 'monkey', text: '（笑）不敢触碰在哪？你不是天天触摸我吗？就像我天天拷打王以大一样。' },
+      {
+        who: 'girl',
+        text: '王以大都有人黑啊？......nb。你天天点评这个那个的，你有什么作品啊？小猴猫？',
+      },
+      {
+        who: 'monkey',
+        text: '“爆了爆了”创始人，“肚肚笑炸”创始人，“闹得麻麻的创始人”，“原创梗”创始人，“土鸡蛋”创始人，“猴猫家族”创始人，“猴猫宇宙”创始人，“猴猫兵团”创始人，“猴猫集团”创始人，“猴猫兵团”创始人，“猴猫帝国”创始人，“蛋仔派对”创始人，等等一系列创始人 -- 小猴猫',
+      },
+      {
+        who: 'monkey',
+        text: '"套娃直播"创始人，“说唱鄙视链”创始人，“说唱红黑榜”创始人，“说唱斗兽笼”创始人，“说唱听众图鉴”创始人，“猴女郎”创始人，“猴子猴孙”创始人',
+      },
+      {
+        who: 'monkey',
+        text: '（笑）《你有什么作品》也是小猴猫原创梗。那话说回来了，艾德，你又有什么作品？',
+      },
+      {
+        who: 'girl',
+        text: '艾志恒的《英雄》，有没有我的合作？我的代表作是不是《在雨后醒来》里面的一首歌，叫《英雄》？',
+      },
+      {
+        who: 'monkey',
+        text: '（笑）还真是啊，还真是。那咱俩打一把pk，我赢了你，你教我唱《英雄》吧。',
+      },
+      { who: 'girl', text: '来来来，我就要看看今天谁爆的多！' },
+    ],
+    captureScript: '吉奥雷送来跑车后，小猴猫翻盘、艾德认栽、并教会小猴猫《英雄》的收尾台词。',
+    winDialogue: [
+      {
+        who: 'narration',
+        text: '小猴猫苦战好几个回合，眼看拿不下艾德，就在这时，吉奥雷的大跑车大大方方的开进了直播间！',
+      },
+      { who: 'narration', text: '扶大厦之将倾，挽狂澜于既倒，这就是吉奥雷。' },
+      {
+        who: 'monkey',
+        text: '感谢我吉奥雷好兄弟的跑车啊！感谢！年轻猴猫开supra，吉奥雷坐在副驾！',
+      },
+      { who: 'narration', text: '小猴猫战胜了艾德。以后可以公式唱《英雄》了。' },
+    ],
+    // 艾德立绘自始至终用 adb.webp（各场景同一张）
+    assets: {
+      scenes: [
+        { key: 'idle', src: 'adb.webp' },
+        { key: 'reacting', src: 'adb.webp' },
+        { key: 'won', src: 'adb.webp' },
+        { key: 'lost', src: 'adb.webp' },
+      ],
+    },
+    // 小猴猫立绘：对战中用痞帅图，战胜（won）用吉奥雷送的跑车图
+    monkeyPortraits: {
+      idle: 'lmc_pishuai.webp',
+      reacting: 'lmc_pishuai.webp',
+      lost: 'lmc_pishuai.webp',
+      won: 'lmc_jiaolei.webp',
+    },
+  },
+];
+
 export const GIRLS_BY_ID: Record<string, MonkeyGirlDef> = Object.fromEntries(
-  MONKEY_GIRLS.map((g) => [g.id, g]),
+  [...MONKEY_GIRLS, ...RIVALS].map((g) => [g.id, g]),
 );
 
 export function girlDef(id: string): MonkeyGirlDef {
@@ -1271,4 +1355,8 @@ export function girlDef(id: string): MonkeyGirlDef {
   return def;
 }
 
-export const ALL_GIRL_IDS = MONKEY_GIRLS.map((g) => g.id);
+/** 艾德等死对头的 id（HubScreen / events 引用，避免散落字面量）。 */
+export const RIVAL_AIDE_ID = 'rival_aide';
+
+// 含死对头：让 initState 给艾德注册运行时槽（否则进对战读 girls[id] 为空会崩）。
+export const ALL_GIRL_IDS = [...MONKEY_GIRLS, ...RIVALS].map((g) => g.id);

@@ -49,6 +49,7 @@ export function createInitialGameState(opts: NewGameOptions = {}): GameState {
     flags: {},
     flash: null,
     pendingWhaleResult: null,
+    pendingRivalRescue: null,
     dayStartSnapshot: null,
     eventLog: [],
     pendingEvent: null,
